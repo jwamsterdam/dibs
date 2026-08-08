@@ -4,8 +4,8 @@ import { PortfolioChart } from './PortfolioChart';
 
 describe('PortfolioChart', () => {
   it('renders an empty chart region without failing', () => {
-    renderWithProviders(<PortfolioChart points={[]} title="BTC" />);
+    renderWithProviders(<PortfolioChart ariaLabel="BTC chart" points={[]} title="BTC" />);
 
-    expect(screen.getByRole('region', { name: 'BTC grafiek' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'BTC chart' })).toBeInTheDocument();
   });
 });

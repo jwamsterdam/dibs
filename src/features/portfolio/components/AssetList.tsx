@@ -7,6 +7,8 @@ type AssetListProps = {
   readonly formatCurrency: (value: number) => string;
   readonly formatChange: (value: number) => string;
   readonly formatPercent: (value: number) => string;
+  readonly getSelectAssetLabel: (asset: string) => string;
+  readonly getToggleChangeLabel: (asset: string) => string;
   readonly changeDisplayMode: ChangeDisplayMode;
   readonly onSelectAsset: (assetId: string) => void;
   readonly onToggleChangeDisplayMode: () => void;
@@ -17,6 +19,8 @@ export function AssetList({
   formatCurrency,
   formatChange,
   formatPercent,
+  getSelectAssetLabel,
+  getToggleChangeLabel,
   changeDisplayMode,
   onSelectAsset,
   onToggleChangeDisplayMode,
@@ -34,6 +38,8 @@ export function AssetList({
           onSelect={() => onSelectAsset(row.id)}
           onToggleChangeDisplayMode={onToggleChangeDisplayMode}
           percentageChange={formatPercent(row.changePercent)}
+          selectLabel={getSelectAssetLabel(row.label)}
+          toggleChangeLabel={getToggleChangeLabel(row.label)}
           value={formatCurrency(row.value)}
         />
       ))}

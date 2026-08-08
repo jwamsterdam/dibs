@@ -23,6 +23,9 @@ export default defineConfig({
           if (!id.includes('node_modules')) {
             return undefined;
           }
+          if (id.includes('recharts') || id.includes('d3-')) {
+            return 'charts';
+          }
           // Keep TanStack in its own chunk; React + its deps stay together
           // in `vendor` to avoid cross-chunk cycles.
           if (id.includes('@tanstack')) {

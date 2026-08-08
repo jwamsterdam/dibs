@@ -52,7 +52,7 @@ const snapshot = {
   people: [
     {
       id: 'jan',
-      name: 'Jan',
+      name: 'JW',
       selectedAssetId: 'total',
       assets: [
         { id: 'btc', label: 'BTC', symbol: 'BTC', amount: 0.42, kind: 'crypto' },

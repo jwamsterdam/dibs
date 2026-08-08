@@ -7,6 +7,6 @@ describe('readOnlyMockPortfolioDataSource', () => {
     expect(snapshot.mode).toBe('read-only-mock');
     expect(snapshot.futurePriceProvider).toBe('coingecko');
     expect(snapshot.futureStakingProvider).toBe('beacon-api');
-    expect(snapshot.people[0]?.name).toBe('Jan');
+    expect(snapshot.people[0]?.name).toBe('JW');
   });
 });

@@ -1,0 +1,12 @@
+{
+  "aria": {
+    "periodNavigation": "Period",
+    "selectAsset": "Select {{asset}}",
+    "settings": "Settings",
+    "toggleChange": "Toggle change for {{asset}}",
+    "chart": "{{asset}} chart"
+  },
+  "rewards": {
+    "ethereum02Available": "ETH (0x02) available rewards"
+  }
+}

@@ -1,45 +1,89 @@
 import type { PricePoint } from '../types/portfolio';
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 type PortfolioChartProps = {
+  readonly ariaLabel: string;
   readonly title: string;
   readonly points: readonly PricePoint[];
 };
 
-function buildPath(points: readonly PricePoint[]): string {
-  if (points.length === 0) {
-    return '';
-  }
+type ChartPoint = {
+  readonly label: string;
+  readonly value: number;
+};
 
-  const values = points.map((point) => point.value);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const lastIndex = points.length - 1 || 1;
+const fallbackLabels = ['15 apr', '30 apr', '15 mei', '30 mei', '15 jun', '30 jun', '15 jul'];
 
-  return points
-    .map((point, index) => {
-      const x = (index / lastIndex) * 100;
-      const y = 90 - ((point.value - min) / range) * 70;
-      return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`;
-    })
-    .join(' ');
+function toChartPoints(points: readonly PricePoint[]): readonly ChartPoint[] {
+  return points.map((point, index) => ({
+    label: fallbackLabels[index] ?? point.timestamp,
+    value: point.value,
+  }));
 }
 
-export function PortfolioChart({ title, points }: PortfolioChartProps): React.JSX.Element {
-  const path = buildPath(points);
+function formatAxisCurrency(value: number): string {
+  if (Math.abs(value) >= 1_000) {
+    return `€${Math.round(value / 1_000)}K`;
+  }
+  return `€${Math.round(value)}`;
+}
+
+export function PortfolioChart({ ariaLabel, points }: PortfolioChartProps): React.JSX.Element {
+  const chartPoints = toChartPoints(points);
 
   return (
-    <section aria-label={`${title} grafiek`} className="pt-5">
-      <h2 className="text-[0.95rem] font-semibold leading-tight text-fg-primary">{title}</h2>
-      <svg
-        aria-hidden="true"
-        className="mt-3 h-40 w-full overflow-visible"
-        preserveAspectRatio="none"
-        viewBox="0 0 100 100"
+    <section aria-label={ariaLabel} className="h-[19rem] pt-8">
+      <AreaChart
+        data={chartPoints}
+        margin={{ bottom: 8, left: 0, right: 0, top: 8 }}
+        responsive
+        role="img"
+        style={{ height: '100%', width: '100%' }}
       >
-        <path d="M 0 92 L 100 92" fill="none" stroke="var(--color-border-subtle)" strokeWidth="0.45" />
-        <path d={path} fill="none" stroke="var(--color-brand-primary)" strokeLinecap="round" strokeWidth="1.45" />
-      </svg>
+        <defs>
+          <linearGradient id="portfolio-chart-fill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="var(--color-brand-primary)" stopOpacity={0.18} />
+            <stop offset="100%" stopColor="var(--color-brand-primary)" stopOpacity={0.08} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid
+          stroke="var(--color-chart-grid)"
+          strokeDasharray="2 4"
+          vertical={false}
+        />
+        <YAxis
+          axisLine={false}
+          dataKey="value"
+          domain={['dataMin', 'dataMax']}
+          tick={{ fill: 'var(--color-fg-primary)', fontSize: 11 }}
+          tickFormatter={formatAxisCurrency}
+          tickLine={false}
+          width={48}
+        />
+        <XAxis
+          axisLine={false}
+          dataKey="label"
+          interval="preserveStartEnd"
+          minTickGap={12}
+          tick={{ fill: 'var(--color-fg-primary)', fontSize: 11 }}
+          tickLine={false}
+        />
+        <Area
+          animationDuration={220}
+          dataKey="value"
+          fill="url(#portfolio-chart-fill)"
+          isAnimationActive
+          stroke="var(--color-brand-primary)"
+          strokeWidth={2}
+          type="monotone"
+        />
+      </AreaChart>
     </section>
   );
 }

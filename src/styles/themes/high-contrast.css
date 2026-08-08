@@ -1,5 +1,6 @@
 :root[data-theme='high-contrast'] {
   --color-brand-primary: #ffff00;
+  --color-brand-muted: #333300;
   --color-bg-primary: #000000;
   --color-bg-secondary: #0a0a0a;
   --color-fg-primary: #ffffff;
@@ -7,6 +8,7 @@
   --color-fg-on-brand: #000000;
   --color-border-subtle: #ffffff;
   --color-border-strong: #ffffff;
+  --color-chart-grid: #ffffff;
   --color-gain: #00ff00;
   --color-loss: #ff8080;
 }

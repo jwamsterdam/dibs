@@ -9,6 +9,7 @@ export default {
       colors: {
         brand: {
           primary: 'var(--color-brand-primary)',
+          muted: 'var(--color-brand-muted)',
         },
         bg: {
           primary: 'var(--color-bg-primary)',

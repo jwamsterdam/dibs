@@ -5,6 +5,14 @@ import { server } from '@/shared/lib/msw/server';
 
 expect.extend(toHaveNoViolations);
 
+class ResizeObserverMock {
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+}
+
+globalThis.ResizeObserver = ResizeObserverMock;
+
 // MSW: identical handlers back the app in tests. Fail on unhandled requests to
 // catch typos; reset handlers and in-memory data between tests.
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));

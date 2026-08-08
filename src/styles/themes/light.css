@@ -1,6 +1,7 @@
 :root,
 :root[data-theme='light'] {
-  --color-brand-primary: #3b82f6;
+  --color-brand-primary: #055cf5;
+  --color-brand-muted: #dbe3fc;
   --color-bg-primary: #ffffff;
   --color-bg-secondary: #f3f4f6;
   --color-fg-primary: #111827;
@@ -8,6 +9,7 @@
   --color-fg-on-brand: #ffffff;
   --color-border-subtle: #e5e7eb;
   --color-border-strong: #d1d5db;
-  --color-gain: #047857;
-  --color-loss: #b91c1c;
+  --color-chart-grid: #e8edf5;
+  --color-gain: #00d133;
+  --color-loss: #ff0d09;
 }

@@ -1,5 +1,6 @@
 :root[data-theme='dark'] {
-  --color-brand-primary: #60a5fa;
+  --color-brand-primary: #6ea2ff;
+  --color-brand-muted: #1f3b6d;
   --color-bg-primary: #111827;
   --color-bg-secondary: #1f2937;
   --color-fg-primary: #f9fafb;
@@ -7,6 +8,7 @@
   --color-fg-on-brand: #111827;
   --color-border-subtle: #374151;
   --color-border-strong: #4b5563;
+  --color-chart-grid: #374151;
   --color-gain: #34d399;
   --color-loss: #f87171;
 }

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { usePortfolioController } from '../hooks/usePortfolioController';
 import { AssetList } from '../components/AssetList';
 import { PeriodTabs } from '../components/PeriodTabs';
@@ -41,15 +42,27 @@ function useFormatters(): {
 
 export function PortfolioPage(): React.JSX.Element {
   const controller = usePortfolioController();
+  const { t } = useTranslation('portfolio');
   const { formatCurrency, formatChange, formatPercent } = useFormatters();
 
   return (
     <main className="min-h-[100svh] bg-bg-primary px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1.25rem+env(safe-area-inset-top))] text-fg-primary">
       <div className="mx-auto flex min-h-[calc(100svh-2.25rem)] w-full max-w-[27rem] flex-col">
-        <h1 className="pb-4 text-[1.45rem] font-semibold leading-tight tracking-normal">
-          {controller.personName}
-        </h1>
+        <header className="grid grid-cols-[2.75rem_1fr_2.75rem] items-center pb-6">
+          <span aria-hidden="true" />
+          <h1 className="text-center text-[1.45rem] font-bold leading-tight tracking-normal">
+            {controller.personName}
+          </h1>
+          <button
+            aria-label={t('aria.settings')}
+            className="grid min-h-11 min-w-11 place-items-center rounded-sm text-[1.55rem] leading-none text-fg-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            type="button"
+          >
+            ⚙
+          </button>
+        </header>
         <PeriodTabs
+          ariaLabel={t('aria.periodNavigation')}
           onSelectPeriod={controller.selectPeriod}
           periods={controller.periods}
           selectedPeriod={controller.selectedPeriod}
@@ -59,13 +72,22 @@ export function PortfolioPage(): React.JSX.Element {
           formatChange={formatChange}
           formatCurrency={formatCurrency}
           formatPercent={formatPercent}
+          getSelectAssetLabel={(asset) => t('aria.selectAsset', { asset })}
+          getToggleChangeLabel={(asset) => t('aria.toggleChange', { asset })}
           onSelectAsset={controller.selectAsset}
           onToggleChangeDisplayMode={controller.toggleChangeDisplayMode}
           rows={controller.rows}
         />
         <div className="flex min-h-8 flex-1" />
-        <PortfolioChart points={controller.chartPoints} title={controller.selectedLabel} />
-        <RewardsRow label="ETH staking rewards" value={formatCurrency(controller.rewardValue)} />
+        <PortfolioChart
+          ariaLabel={t('aria.chart', { asset: controller.selectedLabel })}
+          points={controller.chartPoints}
+          title={controller.selectedLabel}
+        />
+        <RewardsRow
+          label={t('rewards.ethereum02Available')}
+          value={formatCurrency(controller.rewardValue)}
+        />
       </div>
     </main>
   );
