@@ -4,12 +4,14 @@
   --color-brand-muted: #dbe3fc;
   --color-bg-primary: #ffffff;
   --color-bg-secondary: #f3f4f6;
-  --color-fg-primary: #111827;
+  --color-fg-primary: #020921;
   --color-fg-muted: #6b7280;
   --color-fg-on-brand: #ffffff;
-  --color-border-subtle: #e5e7eb;
-  --color-border-strong: #d1d5db;
-  --color-chart-grid: #e8edf5;
+  --color-border-subtle: #e8edf3;
+  --color-border-strong: #020921;
+  --color-chart-axis: #020921;
+  --color-chart-fill: #e6efff;
+  --color-chart-grid: #edf2f8;
   --color-gain: #00d133;
   --color-loss: #ff0d09;
 }

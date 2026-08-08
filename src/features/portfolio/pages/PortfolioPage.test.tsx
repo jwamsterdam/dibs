@@ -15,6 +15,7 @@ describe('PortfolioPage', () => {
     expect(screen.getByRole('heading', { name: 'JW' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Select Totaal' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Select BTC' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Select ETH staking' })).not.toBeInTheDocument();
     expect(screen.queryByText('›')).not.toBeInTheDocument();
     expect(screen.getByText('ETH staking rewards')).toBeInTheDocument();
   });

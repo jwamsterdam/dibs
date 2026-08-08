@@ -9,6 +9,7 @@ import {
 import type { PortfolioAsset, PortfolioPeriod, PricePoint } from '../types/portfolio';
 
 const periods: readonly PortfolioPeriod[] = ['1D', '1W', '1M', 'YTD', '1Y', 'ALL'];
+const demoEthStakingRewardsEur = 18_420;
 
 export type PortfolioRow = {
   readonly id: string;
@@ -17,6 +18,7 @@ export type PortfolioRow = {
   readonly changeValue: number;
   readonly changePercent: number;
   readonly isSelected: boolean;
+  readonly isTotal: boolean;
 };
 
 export type PortfolioController = {
@@ -86,12 +88,9 @@ export function usePortfolioController(): PortfolioController {
       changeValue,
       changePercent,
       isSelected: asset.id === selectedAsset.id,
+      isTotal: asset.id === 'total',
     };
   });
-
-  const rewardValue =
-    person.assets.find((asset) => asset.id === 'eth-staking')?.staking?.availableRewardsEth ?? 0;
-  const ethValue = getLastValue(getSeries('eth', selectedPeriod)) / 12.4;
 
   return {
     personName: person.name,
@@ -100,7 +99,7 @@ export function usePortfolioController(): PortfolioController {
     selectedLabel: selectedAsset.label,
     rows,
     chartPoints: getSeries(selectedAsset.id, selectedPeriod),
-    rewardValue: Math.round(rewardValue * ethValue),
+    rewardValue: demoEthStakingRewardsEur,
     changeDisplayMode,
     selectPeriod: setSelectedPeriod,
     selectAsset: (assetId): void => {

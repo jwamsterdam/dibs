@@ -9,6 +9,7 @@ type AssetRowProps = {
   readonly percentageChange: string;
   readonly changeValue: number;
   readonly isSelected: boolean;
+  readonly isTotal: boolean;
   readonly changeDisplayMode: ChangeDisplayMode;
   readonly onSelect: () => void;
   readonly onToggleChangeDisplayMode: () => void;
@@ -23,6 +24,7 @@ export function AssetRow({
   percentageChange,
   changeValue,
   isSelected,
+  isTotal,
   changeDisplayMode,
   onSelect,
   onToggleChangeDisplayMode,
@@ -30,28 +32,37 @@ export function AssetRow({
   const changeClassName = changeValue < 0 ? 'text-loss' : 'text-gain';
   const displayedChange = changeDisplayMode === 'absolute' ? absoluteChange : percentageChange;
   const indicatorClassName = isSelected ? 'opacity-100' : 'opacity-0';
+  const rowWeightClassName = isTotal ? 'font-bold' : 'font-normal';
+  const dividerClassName = isTotal ? 'border-[var(--color-border-strong)]' : 'border-[var(--color-border-subtle)]';
 
   return (
-    <li className="relative border-b border-[var(--color-border-subtle)] last:border-b-0">
+    <li
+      className={`relative grid min-h-[3.15rem] grid-cols-[0.75rem_minmax(6.8rem,1fr)_minmax(5.4rem,auto)_minmax(4.65rem,auto)] items-center gap-2 border-b last:border-b-0 ${dividerClassName}`}
+    >
       <button
         aria-current={isSelected ? 'true' : undefined}
         aria-label={selectLabel}
-        className="grid min-h-[4.25rem] w-full grid-cols-[0.55rem_minmax(6.5rem,1fr)_minmax(5.9rem,auto)_minmax(4.8rem,auto)] items-center gap-2 py-2 pr-0 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+        className="absolute inset-y-0 left-0 right-[5.25rem] z-10 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
         onClick={onSelect}
         type="button"
+      />
+      <span
+        aria-hidden="true"
+        className={`pointer-events-none ml-0.5 h-8 w-[0.18rem] rounded-sm bg-brand-primary transition-opacity duration-200 ${indicatorClassName}`}
+      />
+      <span
+        className={`pointer-events-none min-w-0 justify-self-start truncate text-left text-[0.98rem] leading-none text-fg-primary ${rowWeightClassName}`}
       >
-        <span
-          aria-hidden="true"
-          className={`h-9 w-0.5 rounded-sm bg-brand-primary transition-opacity duration-200 ${indicatorClassName}`}
-        />
-        <span className="truncate text-[1.05rem] font-medium leading-tight text-fg-primary">{label}</span>
-        <span className="text-right text-[1rem] tabular-nums leading-tight text-fg-primary">
-          {value}
-        </span>
-      </button>
+        {label}
+      </span>
+      <span
+        className={`pointer-events-none justify-self-end text-right text-[0.98rem] tabular-nums leading-none text-fg-primary ${rowWeightClassName}`}
+      >
+        {value}
+      </span>
       <button
         aria-label={toggleChangeLabel}
-        className={`absolute bottom-[1.45rem] right-0 min-h-8 min-w-[4.8rem] text-right text-[1rem] tabular-nums leading-tight ${changeClassName} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary`}
+        className={`relative z-20 min-h-11 justify-self-end text-right text-[0.98rem] tabular-nums leading-none ${changeClassName} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary`}
         onClick={onToggleChangeDisplayMode}
         type="button"
       >

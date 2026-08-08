@@ -33,6 +33,7 @@ export function AssetList({
           changeDisplayMode={changeDisplayMode}
           changeValue={row.changeValue}
           isSelected={row.isSelected}
+          isTotal={row.isTotal}
           key={row.id}
           label={row.label}
           onSelect={() => onSelectAsset(row.id)}

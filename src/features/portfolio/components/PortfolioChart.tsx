@@ -16,6 +16,8 @@ export type ChartPoint = {
   readonly value: number;
 };
 
+const yAxisTicks = [200_000, 250_000, 300_000, 350_000, 400_000] as const;
+
 export function formatAxisCurrency(value: number): string {
   if (Math.abs(value) >= 1_000) {
     return `€${Math.round(value / 1_000)}K`;
@@ -25,18 +27,18 @@ export function formatAxisCurrency(value: number): string {
 
 export function PortfolioChart({ ariaLabel, points }: PortfolioChartProps): React.JSX.Element {
   return (
-    <section aria-label={ariaLabel} className="h-[19rem] pt-8">
+    <section aria-label={ariaLabel} className="h-[13.6rem]">
       <AreaChart
         data={points}
-        margin={{ bottom: 8, left: 0, right: 0, top: 8 }}
+        margin={{ bottom: 0, left: 0, right: 3, top: 0 }}
         responsive
         role="img"
         style={{ height: '100%', width: '100%' }}
       >
         <defs>
           <linearGradient id="portfolio-chart-fill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="var(--color-brand-primary)" stopOpacity={0.18} />
-            <stop offset="100%" stopColor="var(--color-brand-primary)" stopOpacity={0.08} />
+            <stop offset="0%" stopColor="var(--color-chart-fill)" stopOpacity={1} />
+            <stop offset="100%" stopColor="var(--color-chart-fill)" stopOpacity={1} />
           </linearGradient>
         </defs>
         <CartesianGrid
@@ -47,28 +49,29 @@ export function PortfolioChart({ ariaLabel, points }: PortfolioChartProps): Reac
         <YAxis
           axisLine={false}
           dataKey="value"
-          domain={['dataMin', 'dataMax']}
-          tick={{ fill: 'var(--color-fg-primary)', fontSize: 11 }}
+          domain={[200_000, 400_000]}
+          ticks={yAxisTicks}
+          tick={{ fill: 'var(--color-chart-axis)', fontSize: 11 }}
           tickFormatter={formatAxisCurrency}
           tickLine={false}
-          width={48}
+          width={43}
         />
         <XAxis
           axisLine={false}
           dataKey="label"
-          interval="preserveStartEnd"
-          minTickGap={12}
-          tick={{ fill: 'var(--color-fg-primary)', fontSize: 11 }}
+          interval={0}
+          tick={{ fill: 'var(--color-chart-axis)', fontSize: 11 }}
           tickLine={false}
         />
         <Area
           animationDuration={220}
+          baseValue={200_000}
           dataKey="value"
           fill="url(#portfolio-chart-fill)"
           isAnimationActive
           stroke="var(--color-brand-primary)"
-          strokeWidth={2}
-          type="monotone"
+          strokeWidth={1.6}
+          type="linear"
         />
       </AreaChart>
     </section>

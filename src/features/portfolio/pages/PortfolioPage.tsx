@@ -59,19 +59,19 @@ export function PortfolioPage(): React.JSX.Element {
   const chartPoints = toChartPoints(controller.chartPoints, fallbackChartLabels);
 
   return (
-    <main className="min-h-[100svh] bg-bg-primary px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1.25rem+env(safe-area-inset-top))] text-fg-primary">
-      <div className="mx-auto flex min-h-[calc(100svh-2.25rem)] w-full max-w-[27rem] flex-col">
-        <header className="grid grid-cols-[2.75rem_1fr_2.75rem] items-center pb-6">
+    <main className="h-[100svh] overflow-hidden bg-bg-primary px-[1.35rem] pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] text-fg-primary">
+      <div className="mx-auto flex h-full w-full max-w-[25.2rem] flex-col">
+        <header className="grid grid-cols-[2.25rem_1fr_2.25rem] items-center pb-[1.35rem]">
           <span aria-hidden="true" />
           <h1 className="text-center text-[1.45rem] font-bold leading-tight tracking-normal">
             {controller.personName}
           </h1>
           <button
             aria-label={t('aria.settings')}
-            className="grid min-h-11 min-w-11 place-items-center rounded-sm text-[1.55rem] leading-none text-fg-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            className="grid min-h-9 min-w-9 place-items-center rounded-full text-[1.35rem] font-light leading-none text-fg-primary transition-colors hover:bg-bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
             type="button"
           >
-            ⚙
+            {'\u2699\uFE0E'}
           </button>
         </header>
         <PeriodTabs
@@ -91,7 +91,7 @@ export function PortfolioPage(): React.JSX.Element {
           onToggleChangeDisplayMode={controller.toggleChangeDisplayMode}
           rows={controller.rows}
         />
-        <div className="flex min-h-8 flex-1" />
+        <div className="flex min-h-[3.1rem] flex-1" />
         <PortfolioChart
           ariaLabel={t('aria.chart', { asset: controller.selectedLabel })}
           points={chartPoints}
