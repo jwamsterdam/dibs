@@ -7,7 +7,14 @@
     "chart": "{{asset}} grafiek"
   },
   "chart": {
-    "fallbackLabels": ["15 apr", "30 apr", "15 mei", "30 mei", "15 jun", "30 jun", "15 jul"]
+    "labels": {
+      "1D": ["09:00", "11:00", "13:00", "15:00", "17:00", "19:00", "21:00"],
+      "1W": ["ma", "di", "wo", "do", "vr", "za", "zo"],
+      "1M": ["week 1", "week 2", "week 3", "week 4", "week 5", "week 6", "nu"],
+      "YTD": ["jan", "feb", "mrt", "apr", "mei", "jun", "nu"],
+      "1Y": ["aug", "okt", "dec", "feb", "apr", "jun", "nu"],
+      "ALL": ["2020", "2021", "2022", "2023", "2024", "2025", "nu"]
+    }
   },
   "rewards": {
     "ethStakingRewards": "ETH staking rewards"

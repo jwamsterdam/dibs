@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/shared/test/renderWithProviders';
 import { loadNamespace } from '@/shared/i18n';
-import { PortfolioPage } from './PortfolioPage';
+import { PortfolioPage, toChartPoints } from './PortfolioPage';
 
 describe('PortfolioPage', () => {
   beforeAll(async () => {
@@ -56,5 +56,21 @@ describe('PortfolioPage', () => {
     await user.click(screen.getByRole('button', { name: '1W' }));
 
     expect(totalChange).toHaveTextContent(/\+€\s?11\.746/);
+  });
+  it('maps chart points to the active period labels', () => {
+    expect(
+      toChartPoints(
+        [
+          { timestamp: '1W-0', value: 100 },
+          { timestamp: '1W-1', value: 120 },
+          { timestamp: '1W-2', value: 140 },
+        ],
+        ['ma', 'di', 'wo'],
+      ),
+    ).toEqual([
+      { label: 'ma', value: 100 },
+      { label: 'di', value: 120 },
+      { label: 'wo', value: 140 },
+    ]);
   });
 });

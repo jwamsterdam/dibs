@@ -1,6 +1,12 @@
 import { screen } from '@testing-library/react';
 import { renderWithProviders } from '@/shared/test/renderWithProviders';
-import { formatAxisCurrency, getTimelineTicks, PortfolioChart } from './PortfolioChart';
+import {
+  formatAxisCurrency,
+  getTimelineTicks,
+  getValueDomain,
+  getValueTicks,
+  PortfolioChart,
+} from './PortfolioChart';
 
 describe('PortfolioChart', () => {
   it('renders an empty chart region without failing', () => {
@@ -27,5 +33,54 @@ describe('PortfolioChart', () => {
 
   it('deduplicates timeline ticks for sparse datasets', () => {
     expect(getTimelineTicks([{ label: 'Vandaag', value: 200_000 }])).toEqual(['Vandaag']);
+  });
+
+  it('derives the value axis domain from the supplied chart points', () => {
+    const btcDomain = getValueDomain([
+      { label: 'Start', value: 24_940 },
+      { label: 'Middle', value: 25_700 },
+      { label: 'End', value: 26_896 },
+    ]);
+    const totalDomain = getValueDomain([
+      { label: 'Start', value: 341_200 },
+      { label: 'Middle', value: 347_000 },
+      { label: 'End', value: 352_946 },
+    ]);
+
+    expect(btcDomain[0]).toBeLessThanOrEqual(24_940);
+    expect(btcDomain[1]).toBeGreaterThanOrEqual(26_896);
+    expect(totalDomain[0]).toBeLessThanOrEqual(341_200);
+    expect(totalDomain[1]).toBeGreaterThanOrEqual(352_946);
+    expect(btcDomain).not.toEqual(totalDomain);
+  });
+
+  it('uses a safe fallback value domain for empty chart points', () => {
+    expect(getValueDomain([])).toEqual([0, 1]);
+  });
+
+  it('adds breathing room around flat chart data', () => {
+    expect(getValueDomain([{ label: 'Start', value: 100 }])).toEqual([98, 102]);
+  });
+
+  it('rounds compact chart ranges to calm steps', () => {
+    expect(
+      getValueDomain([
+        { label: 'Start', value: 1_000 },
+        { label: 'End', value: 1_500 },
+      ]),
+    ).toEqual([500, 2_000]);
+  });
+
+  it('rounds wider chart ranges without binding to the total portfolio scale', () => {
+    expect(
+      getValueDomain([
+        { label: 'Start', value: 10_000 },
+        { label: 'End', value: 11_100 },
+      ]),
+    ).toEqual([9_000, 12_000]);
+  });
+
+  it('keeps the value axis to three calm reference ticks', () => {
+    expect(getValueTicks([24_000, 28_000])).toEqual([24_000, 26_000, 28_000]);
   });
 });

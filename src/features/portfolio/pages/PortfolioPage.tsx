@@ -5,7 +5,9 @@ import { AssetList } from '../components/AssetList';
 import { PeriodTabs } from '../components/PeriodTabs';
 import { type ChartPoint, PortfolioChart } from '../components/PortfolioChart';
 import { RewardsRow } from '../components/RewardsRow';
-import type { PricePoint } from '../types/portfolio';
+import type { PortfolioPeriod, PricePoint } from '../types/portfolio';
+
+type ChartLabelsByPeriod = Record<PortfolioPeriod, readonly string[]>;
 
 function useFormatters(): {
   readonly formatCurrency: (value: number) => string;
@@ -41,7 +43,7 @@ function useFormatters(): {
   }, []);
 }
 
-function toChartPoints(
+export function toChartPoints(
   points: readonly PricePoint[],
   fallbackLabels: readonly string[],
 ): readonly ChartPoint[] {
@@ -55,8 +57,11 @@ export function PortfolioPage(): React.JSX.Element {
   const controller = usePortfolioController();
   const { t } = useTranslation('portfolio');
   const { formatCurrency, formatChange, formatPercent } = useFormatters();
-  const fallbackChartLabels = t('chart.fallbackLabels', { returnObjects: true });
-  const chartPoints = toChartPoints(controller.chartPoints, fallbackChartLabels);
+  const chartLabelsByPeriod = t('chart.labels', { returnObjects: true }) as ChartLabelsByPeriod;
+  const chartPoints = toChartPoints(
+    controller.chartPoints,
+    chartLabelsByPeriod[controller.selectedPeriod],
+  );
 
   return (
     <main className="h-[100svh] overflow-hidden bg-bg-primary px-[1.35rem] pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] text-fg-primary">

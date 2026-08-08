@@ -16,7 +16,33 @@ export type ChartPoint = {
   readonly value: number;
 };
 
-const yAxisTicks = [200_000, 300_000, 400_000] as const;
+const fallbackValueDomain = [0, 1] as const;
+
+function roundToStep(value: number, step: number, method: 'ceil' | 'floor'): number {
+  const scaledValue = value / step;
+  return Math[method](scaledValue) * step;
+}
+
+function getNiceStep(range: number): number {
+  const roughStep = range / 2;
+  const exponent = Math.floor(Math.log10(roughStep));
+  const base = 10 ** exponent;
+  const normalizedStep = roughStep / base;
+
+  if (normalizedStep <= 1) {
+    return base;
+  }
+
+  if (normalizedStep <= 2) {
+    return base * 2;
+  }
+
+  if (normalizedStep <= 5) {
+    return base * 5;
+  }
+
+  return base * 10;
+}
 
 export function formatAxisCurrency(value: number): string {
   if (Math.abs(value) >= 1_000) {
@@ -40,8 +66,34 @@ export function getTimelineTicks(points: readonly ChartPoint[]): readonly string
   return Array.from(new Set(ticks));
 }
 
+export function getValueDomain(points: readonly ChartPoint[]): readonly [number, number] {
+  if (points.length === 0) {
+    return fallbackValueDomain;
+  }
+
+  const values = points.map((point) => point.value);
+  const minimumValue = Math.min(...values);
+  const maximumValue = Math.max(...values);
+  const rawRange = maximumValue - minimumValue;
+  const padding = Math.max(rawRange * 0.14, maximumValue * 0.015, 1);
+  const step = getNiceStep(rawRange + padding * 2);
+  const minimumDomain = roundToStep(minimumValue - padding, step, 'floor');
+  const maximumDomain = roundToStep(maximumValue + padding, step, 'ceil');
+
+  return [minimumDomain, maximumDomain];
+}
+
+export function getValueTicks(domain: readonly [number, number]): readonly [number, number, number] {
+  const [minimumDomain, maximumDomain] = domain;
+  const middleTick = Math.round((minimumDomain + maximumDomain) / 2);
+
+  return [minimumDomain, middleTick, maximumDomain];
+}
+
 export function PortfolioChart({ ariaLabel, points }: PortfolioChartProps): React.JSX.Element {
   const timelineTicks = getTimelineTicks(points);
+  const valueDomain = getValueDomain(points);
+  const valueTicks = getValueTicks(valueDomain);
 
   return (
     <section aria-label={ariaLabel} className="h-[13.6rem]">
@@ -67,10 +119,10 @@ export function PortfolioChart({ ariaLabel, points }: PortfolioChartProps): Reac
         <YAxis
           axisLine={false}
           dataKey="value"
-          domain={[200_000, 400_000]}
+          domain={valueDomain}
           orientation="right"
           tick={{ fill: 'var(--color-chart-axis)', fontSize: 10 }}
-          ticks={yAxisTicks}
+          ticks={valueTicks}
           tickFormatter={formatAxisCurrency}
           tickLine={false}
           tickMargin={7}
@@ -88,7 +140,7 @@ export function PortfolioChart({ ariaLabel, points }: PortfolioChartProps): Reac
         />
         <Area
           animationDuration={220}
-          baseValue={200_000}
+          baseValue={valueDomain[0]}
           dataKey="value"
           fill="url(#portfolio-chart-fill)"
           isAnimationActive
