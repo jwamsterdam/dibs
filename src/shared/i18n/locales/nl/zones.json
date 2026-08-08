@@ -1,0 +1,17 @@
+{
+  "title": "Zones",
+  "list": {
+    "heading": "Zones",
+    "label": "Zones",
+    "loading": "Zones laden…",
+    "error": "Kon zones niet laden.",
+    "empty": "Nog geen zones."
+  },
+  "form": {
+    "heading": "Zone toevoegen",
+    "name": "Naam",
+    "description": "Omschrijving",
+    "submit": "Zone toevoegen",
+    "saving": "Opslaan…"
+  }
+}

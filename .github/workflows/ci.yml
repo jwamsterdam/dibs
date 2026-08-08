@@ -1,0 +1,89 @@
+name: CI
+
+# Runs the quality gates on every PR and every push to main.
+# Mirrors the pipeline in docs/Technical-Architecture-Plan.md §7.5.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  HUSKY: 0 # don't install git hooks in CI
+
+jobs:
+  verify:
+    name: Type-check · lint · test · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Type-check
+        run: npm run type-check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests + coverage
+        run: npm run test
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: ignore
+
+      - name: Build
+        run: npm run build
+
+      - name: Bundle budget
+        run: npm run check:bundle
+
+      - name: Upload bundle analysis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-stats
+          path: stats.html
+          if-no-files-found: ignore
+
+  security:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Audit (critical = fail)
+        run: npm run check:audit
+# Follow-ups (need external setup, tracked in the conventions/README enforcement notes):
+#   - SonarCloud Quality Gate  → add a job with the SonarSource action + SONAR_TOKEN secret
+#   - Cypress E2E (nightly + release branches) → separate workflow once cypress.config is added
+#   - Lighthouse CI (@lhci/cli) → perf-budget job once the dependency is approved

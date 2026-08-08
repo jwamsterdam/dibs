@@ -1,0 +1,7 @@
+:root[data-theme='high-contrast'] {
+  --color-brand-primary: #ffff00;
+  --color-bg-primary: #000000;
+  --color-bg-secondary: #0a0a0a;
+  --color-fg-primary: #ffffff;
+  --color-fg-on-brand: #000000;
+}

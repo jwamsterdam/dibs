@@ -1,0 +1,8 @@
+:root,
+:root[data-theme='light'] {
+  --color-brand-primary: #3b82f6;
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f3f4f6;
+  --color-fg-primary: #111827;
+  --color-fg-on-brand: #ffffff;
+}

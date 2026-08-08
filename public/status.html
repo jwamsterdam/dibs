@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skeleton Status — Configuration Tool</title>
+    <!--
+      DEV-ONLY diagnostic page. Lives in public/ so it is served verbatim by
+      Vite (at /status.html) and is NEVER imported by src/ — zero impact on the
+      app bundle. Safe to delete in one step when the skeleton is fleshed out.
+    -->
+    <style>
+      :root {
+        --green: #16a34a;
+        --blue: #2563eb;
+        --red: #dc2626;
+        --amber: #d97706;
+        --bg: #0b0f17;
+        --panel: #131a26;
+        --border: #223049;
+        --fg: #e6edf6;
+        --muted: #8fa1bd;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family:
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        line-height: 1.5;
+      }
+      .wrap {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 32px 20px 64px;
+      }
+      header h1 {
+        margin: 0 0 4px;
+        font-size: 1.6rem;
+      }
+      header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin: 20px 0 8px;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .dot {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        flex: 0 0 auto;
+        box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 18%, transparent);
+      }
+      .dot.green {
+        background: var(--green);
+        color: var(--green);
+      }
+      .dot.blue {
+        background: var(--blue);
+        color: var(--blue);
+      }
+      .dot.red {
+        background: var(--red);
+        color: var(--red);
+      }
+      .dot.amber {
+        background: var(--amber);
+        color: var(--amber);
+      }
+      section {
+        margin-top: 28px;
+      }
+      section h2 {
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--muted);
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 8px;
+        margin-bottom: 12px;
+      }
+      h3.subhead {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin: 22px 0 10px;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--muted);
+      }
+      .subnote {
+        text-transform: none;
+        letter-spacing: normal;
+        font-weight: 400;
+        font-size: 0.78rem;
+        color: var(--muted);
+        max-width: 74ch;
+      }
+      ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 8px;
+      }
+      li {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+      }
+      li .dot {
+        margin-top: 5px;
+      }
+      li .label {
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+      li .note {
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+      .bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+      button {
+        background: var(--panel);
+        color: var(--fg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 6px 12px;
+        cursor: pointer;
+        font-size: 0.85rem;
+      }
+      button:hover {
+        border-color: var(--blue);
+      }
+      code {
+        background: #0000004d;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.82em;
+      }
+      a {
+        color: #6ea8ff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Skeleton Status</h1>
+        <p>
+          Configuration Tool — front-end blueprint · dev-only diagnostic (delete before delivery)
+        </p>
+      </header>
+
+      <div class="legend">
+        <span><i class="dot green"></i> Working — verified</span>
+        <span><i class="dot blue"></i> Not yet implemented — planned</span>
+        <span><i class="dot red"></i> Not working — needs attention</span>
+        <span><i class="dot amber"></i> Checking…</span>
+      </div>
+
+      <section>
+        <h2>Live checks</h2>
+        <div class="bar">
+          <button id="refresh">Re-run probes</button>
+          <span id="checked"></span>
+        </div>
+        <ul id="probes"></ul>
+
+        <h3 class="subhead">
+          Integration readiness
+          <span class="subnote"
+            >optional — the front-end is developed against MSW mocks; these only go green once MSW
+            is active or a real backend is reachable, and are not required for the skeleton
+            itself</span
+          >
+        </h3>
+        <ul id="integration-probes"></ul>
+      </section>
+
+      <section id="manifest-root"></section>
+    </div>
+
+    <script>
+      // --- Configure your dev endpoints here -------------------------------
+      const CONFIG = {
+        restHealthUrl: '/api/health', // adjust to a real health/base endpoint
+        wsUrl: 'ws://localhost:8080/ws', // adjust to your AsyncAPI socket
+      };
+
+      // --- Curated manifest: the true current state of the skeleton --------
+      // status: 'green' | 'blue' | 'red'
+      const MANIFEST = [
+        {
+          title: 'Tooling & Quality Gates',
+          items: [
+            { label: 'Vite 6 build & dev server', status: 'green' },
+            { label: 'TypeScript 5 (strict)', status: 'green', note: 'type-check passes' },
+            { label: 'ESLint 9 flat config', status: 'green', note: 'lint passes' },
+            { label: 'Feature-boundary lint', status: 'green', note: 'boundaries/dependencies' },
+            { label: 'a11y lint (jsx-a11y)', status: 'green' },
+            { label: 'No-hardcoded-colour rule', status: 'green' },
+            { label: 'Test-quality lint', status: 'green', note: 'testing-library + jest-dom' },
+            { label: 'Prettier', status: 'green' },
+            {
+              label: 'Jest + RTL + jest-axe',
+              status: 'green',
+              note: '28 tests, coverage gate met',
+            },
+            { label: 'Storybook 8', status: 'green', note: 'builds' },
+            { label: 'Cypress E2E', status: 'blue', note: 'config + specs pending (WP0)' },
+            { label: 'Husky pre-commit / commit-msg', status: 'green' },
+            {
+              label: 'GitHub Actions CI',
+              status: 'green',
+              note: 'type-check · lint · test · build · bundle · audit',
+            },
+            { label: 'SonarCloud Quality Gate', status: 'blue', note: 'needs project setup' },
+          ],
+        },
+        {
+          title: 'Application Shell',
+          items: [
+            { label: 'Providers (Query / Theme / i18n)', status: 'green' },
+            { label: 'Global ErrorBoundary', status: 'green' },
+            { label: 'TanStack Router', status: 'green', note: 'code-based, 1 route' },
+            {
+              label: 'Theming (light/dark/high-contrast)',
+              status: 'green',
+              note: 'CSS var tokens',
+            },
+            { label: 'i18n (en/nl, type-safe keys)', status: 'green' },
+          ],
+        },
+        {
+          title: 'Shared Layer',
+          items: [
+            { label: 'cn() class helper', status: 'green' },
+            { label: 'Button (placeholder)', status: 'green', note: 'story + tests' },
+            { label: 'Untitled UI integration', status: 'blue', note: 'awaiting license/CLI' },
+            { label: 'useWebSocket + ConnectionStatus', status: 'blue' },
+          ],
+        },
+        {
+          title: 'API Integration',
+          items: [
+            { label: 'REST codegen (openapi-ts)', status: 'blue', note: 'needs openapi.yaml' },
+            { label: 'WS codegen (asyncapi)', status: 'blue', note: 'needs asyncapi.yaml' },
+            {
+              label: 'MSW mock handlers',
+              status: 'green',
+              note: 'health + zones; dev worker active',
+            },
+          ],
+        },
+        {
+          title: 'Features (Work Packages)',
+          items: [
+            { label: 'Dashboard (sample slice)', status: 'green' },
+            {
+              label: 'Zones (reference slice)',
+              status: 'green',
+              note: 'full stack: query+mutation, RHF+Zod, Jotai, MSW, tests, story, i18n',
+            },
+            { label: 'WP1 · Auth', status: 'blue' },
+            { label: 'WP2 · Configuration Wizard', status: 'blue' },
+            { label: 'WP3 · User Management', status: 'blue' },
+            { label: 'WP4 · System Composition', status: 'blue' },
+            { label: 'WP5 · Device Options', status: 'blue' },
+            { label: 'WP6 · System Options & Zones', status: 'blue' },
+            { label: 'WP7 · Call Definition & BGM', status: 'blue' },
+            { label: 'WP8 · Actions & Audio Processing', status: 'blue' },
+            { label: 'WP9 · Diagnostics', status: 'blue' },
+            { label: 'WP10 · Settings', status: 'blue' },
+            { label: 'WP11 · Operator Portal', status: 'blue' },
+          ],
+        },
+        {
+          title: 'Documentation',
+          items: [
+            { label: 'README.md', status: 'green' },
+            { label: 'AGENTS.md', status: 'green' },
+            { label: 'docs/Technical-Architecture-Plan.md', status: 'green' },
+            { label: 'docs/agents/* (8 role cards)', status: 'green' },
+            {
+              label: 'docs/delivery-workflow.md',
+              status: 'green',
+              note: 'steering + routing matrix',
+            },
+            { label: '.github/ (PR template, CODEOWNERS)', status: 'green', note: 'human gates' },
+            {
+              label: 'docs/repo-setup.md',
+              status: 'green',
+              note: 'branch protection + secrets checklist',
+            },
+            {
+              label: 'Reviewer subagents + /route-review',
+              status: 'green',
+              note: '.claude/agents + command',
+            },
+            { label: 'docs/conventions/* (6 standards)', status: 'green' },
+            { label: 'docs/adr/ (template + ADR-0001)', status: 'green' },
+            { label: 'docs/specs/ (Scope)', status: 'green', note: 'scaffolded, empty until WP1' },
+            {
+              label: 'docs/design-notes/ (Pixel)',
+              status: 'green',
+              note: 'scaffolded, empty until WP1',
+            },
+            {
+              label: 'docs/performance/ (Watt)',
+              status: 'green',
+              note: 'budgets + nginx guidance scaffolded',
+            },
+          ],
+        },
+        {
+          title: 'Performance (embedded Linux + nginx)',
+          items: [
+            { label: 'Bundle vendor chunking', status: 'green', note: '~119 KB gz, under budget' },
+            {
+              label: 'Bundle budget gate',
+              status: 'green',
+              note: 'npm run check:bundle (fails over budget)',
+            },
+            {
+              label: 'Route-based code splitting',
+              status: 'green',
+              note: '/zones lazy-loaded as its own chunk',
+            },
+            { label: 'Lighthouse CI (@lhci/cli)', status: 'blue', note: 'needs dep approval' },
+            {
+              label: 'Core Web Vitals budgets',
+              status: 'blue',
+              note: 'confirm on target HW (WP4)',
+            },
+            { label: 'Precompressed assets (brotli/gzip)', status: 'blue' },
+            { label: 'nginx serving spec', status: 'blue', note: 'advisory; customer applies' },
+          ],
+        },
+      ];
+
+      function makeItem({ label, status, note }) {
+        const li = document.createElement('li');
+        const dot = document.createElement('i');
+        dot.className = 'dot ' + status;
+        const body = document.createElement('div');
+        const l = document.createElement('div');
+        l.className = 'label';
+        l.textContent = label;
+        body.appendChild(l);
+        if (note) {
+          const n = document.createElement('div');
+          n.className = 'note';
+          n.textContent = note;
+          body.appendChild(n);
+        }
+        li.appendChild(dot);
+        li.appendChild(body);
+        return li;
+      }
+
+      // Render curated manifest.
+      const root = document.getElementById('manifest-root');
+      for (const group of MANIFEST) {
+        const sec = document.createElement('section');
+        const h = document.createElement('h2');
+        h.textContent = group.title;
+        const ul = document.createElement('ul');
+        for (const item of group.items) ul.appendChild(makeItem(item));
+        sec.appendChild(h);
+        sec.appendChild(ul);
+        root.appendChild(sec);
+      }
+
+      // --- Live probes ------------------------------------------------------
+      function probeItem(label, status, note) {
+        return makeItem({ label, status, note });
+      }
+
+      async function runProbes() {
+        // Core front-end signal: the dev server is serving this page.
+        const list = document.getElementById('probes');
+        list.innerHTML = '';
+        list.appendChild(probeItem('Dev server (this page)', 'green', location.origin));
+
+        // Integration readiness (optional — mocked in dev via MSW).
+        const integ = document.getElementById('integration-probes');
+        integ.innerHTML = '';
+
+        // MSW mock worker — the front-end's actual dev-time data source.
+        const msw = probeItem('MSW mock worker', 'amber', 'checking…');
+        integ.appendChild(msw);
+        try {
+          const regs = navigator.serviceWorker
+            ? await navigator.serviceWorker.getRegistrations()
+            : [];
+          const active = regs.some((r) =>
+            (r.active?.scriptURL ?? '').includes('mockServiceWorker'),
+          );
+          msw.replaceWith(
+            probeItem(
+              'MSW mock worker',
+              active ? 'green' : 'blue',
+              active
+                ? 'intercepting requests'
+                : 'inactive on this standalone page — load the app (e.g. /zones) to register it',
+            ),
+          );
+        } catch {
+          msw.replaceWith(probeItem('MSW mock worker', 'blue', 'not registered yet'));
+        }
+
+        // REST health check.
+        const rest = probeItem('REST API', 'amber', CONFIG.restHealthUrl + ' — checking…');
+        integ.appendChild(rest);
+        try {
+          const res = await fetch(CONFIG.restHealthUrl, {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+          });
+          // Guard against the Vite SPA fallback (which returns 200 + text/html
+          // for unknown paths): only treat a real JSON response as "up".
+          const isJson = (res.headers.get('content-type') ?? '').includes('application/json');
+          if (res.ok && isJson) {
+            rest.replaceWith(
+              probeItem('REST API', 'green', CONFIG.restHealthUrl + ' → ' + res.status),
+            );
+          } else if (res.ok) {
+            rest.replaceWith(
+              probeItem(
+                'REST API',
+                'red',
+                CONFIG.restHealthUrl + ' → 200 but not JSON (no backend/mock)',
+              ),
+            );
+          } else {
+            rest.replaceWith(
+              probeItem('REST API', 'red', CONFIG.restHealthUrl + ' → ' + res.status),
+            );
+          }
+        } catch {
+          rest.replaceWith(probeItem('REST API', 'red', CONFIG.restHealthUrl + ' → unreachable'));
+        }
+
+        // WebSocket check.
+        const ws = probeItem('WebSocket', 'amber', CONFIG.wsUrl + ' — connecting…');
+        integ.appendChild(ws);
+        try {
+          const socket = new WebSocket(CONFIG.wsUrl);
+          const timer = setTimeout(() => {
+            ws.replaceWith(probeItem('WebSocket', 'red', CONFIG.wsUrl + ' → timeout'));
+            socket.close();
+          }, 3000);
+          socket.onopen = () => {
+            clearTimeout(timer);
+            ws.replaceWith(probeItem('WebSocket', 'green', CONFIG.wsUrl + ' → connected'));
+            socket.close();
+          };
+          socket.onerror = () => {
+            clearTimeout(timer);
+            ws.replaceWith(probeItem('WebSocket', 'red', CONFIG.wsUrl + ' → error'));
+          };
+        } catch {
+          ws.replaceWith(probeItem('WebSocket', 'red', CONFIG.wsUrl + ' → invalid'));
+        }
+
+        document.getElementById('checked').textContent =
+          'Last checked: ' + new Date().toLocaleTimeString();
+      }
+
+      document.getElementById('refresh').addEventListener('click', runProbes);
+      runProbes();
+    </script>
+  </body>
+</html>

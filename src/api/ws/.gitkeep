@@ -1,0 +1,2 @@
+# Generated WebSocket event types (events.gen.ts) — do not edit by hand.
+# Produced by `npm run generate:ws` from the client-provided asyncapi.yaml.

@@ -1,0 +1,17 @@
+{
+  "title": "Zones",
+  "list": {
+    "heading": "Zones",
+    "label": "Zones",
+    "loading": "Loading zones…",
+    "error": "Could not load zones.",
+    "empty": "No zones yet."
+  },
+  "form": {
+    "heading": "Add zone",
+    "name": "Name",
+    "description": "Description",
+    "submit": "Add zone",
+    "saving": "Saving…"
+  }
+}

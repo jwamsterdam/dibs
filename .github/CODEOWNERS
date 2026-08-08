@@ -1,0 +1,32 @@
+# CODEOWNERS — automates the HUMAN review gates by routing PRs to owners by path.
+# GitHub auto-requests these reviewers; enable branch protection ("Require review
+# from Code Owners") on main to make them mandatory.
+#
+# Virtual teammates (Vibe, Solid, Probe, …) are NOT GitHub accounts and cannot be
+# listed here — they are invoked in Claude Code / Codex per the review routing matrix
+# in docs/delivery-workflow.md.
+#
+# TODO: replace the placeholder handles below with real GitHub usernames or teams.
+
+# Default owner — Senior Front-end reviews everything.
+*                           @senior-frontend
+
+# Architecture-sensitive areas — Solution Architect.
+/src/app/                   @solution-architect @senior-frontend
+/docs/adr/                  @solution-architect
+/docs/Technical-Architecture-Plan.md   @solution-architect
+/eslint.config.js           @solution-architect @senior-frontend
+/tsconfig.json              @solution-architect
+
+# Build / CI / deploy — DevOps + Architect.
+/.github/                   @devops @solution-architect
+/vite.config.ts             @devops @senior-frontend
+/scripts/                   @devops
+
+# Requirements & specs — Business Analyst.
+/docs/specs/                @business-analyst
+
+# Agent charters & conventions — Architect (governs how the team works).
+/AGENTS.md                  @solution-architect
+/docs/agents/               @solution-architect
+/docs/conventions/          @solution-architect @senior-frontend
