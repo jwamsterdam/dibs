@@ -3,23 +3,19 @@ import { useTranslation } from 'react-i18next';
 import { usePortfolioController } from '../hooks/usePortfolioController';
 import { AssetList } from '../components/AssetList';
 import { PeriodTabs } from '../components/PeriodTabs';
+import { SettingsPanel } from '../components/SettingsPanel';
 import { type ChartPoint, PortfolioChart } from '../components/PortfolioChart';
 import { RewardsRow } from '../components/RewardsRow';
-import type { PortfolioPeriod, PricePoint } from '../types/portfolio';
+import type { PortfolioFiatCurrencyCode, PortfolioPeriod, PricePoint } from '../types/portfolio';
 
 type ChartLabelsByPeriod = Record<PortfolioPeriod, readonly string[]>;
 
 function useFormatters(): {
-  readonly formatCurrency: (value: number) => string;
-  readonly formatChange: (value: number) => string;
+  readonly formatCurrency: (value: number, currency: PortfolioFiatCurrencyCode) => string;
+  readonly formatChange: (value: number, currency: PortfolioFiatCurrencyCode) => string;
   readonly formatPercent: (value: number) => string;
 } {
   return useMemo(() => {
-    const currencyFormatter = new Intl.NumberFormat('nl-NL', {
-      currency: 'EUR',
-      maximumFractionDigits: 0,
-      style: 'currency',
-    });
     const percentFormatter = new Intl.NumberFormat('nl-NL', {
       maximumFractionDigits: 1,
       signDisplay: 'exceptZero',
@@ -27,9 +23,18 @@ function useFormatters(): {
     });
 
     return {
-      formatCurrency: (value) => currencyFormatter.format(value),
-      formatChange: (value): string => {
-        const formatted = currencyFormatter.format(Math.abs(value));
+      formatCurrency: (value, currency) =>
+        new Intl.NumberFormat('nl-NL', {
+          currency,
+          maximumFractionDigits: 0,
+          style: 'currency',
+        }).format(value),
+      formatChange: (value, currency): string => {
+        const formatted = new Intl.NumberFormat('nl-NL', {
+          currency,
+          maximumFractionDigits: 0,
+          style: 'currency',
+        }).format(Math.abs(value));
         if (value > 0) {
           return `+${formatted}`;
         }
@@ -74,6 +79,7 @@ export function PortfolioPage(): React.JSX.Element {
           <button
             aria-label={t('aria.settings')}
             className="grid min-h-9 min-w-9 place-items-center rounded-full text-[1.35rem] font-light leading-none text-fg-primary transition-colors hover:bg-bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            onClick={controller.openSettings}
             type="button"
           >
             {'\u2699\uFE0E'}
@@ -87,8 +93,8 @@ export function PortfolioPage(): React.JSX.Element {
         />
         <AssetList
           changeDisplayMode={controller.changeDisplayMode}
-          formatChange={formatChange}
-          formatCurrency={formatCurrency}
+          formatChange={(value) => formatChange(value, controller.fiatCurrency)}
+          formatCurrency={(value) => formatCurrency(value, controller.fiatCurrency)}
           formatPercent={formatPercent}
           getSelectAssetLabel={(asset) => t('aria.selectAsset', { asset })}
           getToggleChangeLabel={(asset) => t('aria.toggleChange', { asset })}
@@ -103,9 +109,10 @@ export function PortfolioPage(): React.JSX.Element {
         />
         <RewardsRow
           label={t('rewards.ethStakingRewards')}
-          value={formatCurrency(controller.rewardValue)}
+          value={formatCurrency(controller.rewardValue, controller.fiatCurrency)}
         />
       </div>
+      {controller.isSettingsOpen ? <SettingsPanel onClose={controller.closeSettings} /> : null}
     </main>
   );
 }

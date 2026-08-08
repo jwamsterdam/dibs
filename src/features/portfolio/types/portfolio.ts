@@ -4,6 +4,8 @@ export type ChangeDisplayMode = 'absolute' | 'percentage';
 
 export type PortfolioAssetKind = 'crypto' | 'stablecoin' | 'staking' | 'total';
 
+export type PortfolioFiatCurrencyCode = 'EUR' | 'USD' | 'GBP' | 'CHF';
+
 export type PortfolioAsset = {
   readonly id: string;
   readonly label: string;
@@ -38,8 +40,8 @@ export type AssetMarketSeries = {
 export type PortfolioSnapshot = {
   readonly people: readonly PortfolioPerson[];
   readonly marketSeries: readonly AssetMarketSeries[];
-  readonly fiatCurrency: 'EUR';
+  readonly fiatCurrency: PortfolioFiatCurrencyCode;
   readonly futurePriceProvider: 'coingecko';
   readonly futureStakingProvider: 'beacon-api';
-  readonly mode: 'read-only-mock';
+  readonly mode: 'online' | 'read-only-mock';
 };

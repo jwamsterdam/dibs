@@ -1,0 +1,184 @@
+import type {
+  AssetMarketSeries,
+  PortfolioAsset,
+  PortfolioPeriod,
+  PortfolioSnapshot,
+  PricePoint,
+} from '../types/portfolio';
+import type { PortfolioFiatCurrency, PortfolioHoldingConfig, PortfolioSettingsConfig } from '../types/settings';
+import { portfolioSnapshotSchema } from '../validation/portfolio.schema';
+import { getCoinGeckoMarketChart, getCoinGeckoPrices, type CoinGeckoChartPoint } from './coingeckoClient';
+
+const sampleCount = 7;
+
+export function getPeriodStartDate(period: PortfolioPeriod, now: Date): Date {
+  const start = new Date(now);
+
+  if (period === '1D') {
+    start.setDate(start.getDate() - 1);
+    return start;
+  }
+
+  if (period === '1W') {
+    start.setDate(start.getDate() - 7);
+    return start;
+  }
+
+  if (period === '1M') {
+    start.setMonth(start.getMonth() - 1);
+    return start;
+  }
+
+  if (period === 'YTD') {
+    return new Date(now.getFullYear(), 0, 1);
+  }
+
+  if (period === '1Y') {
+    start.setFullYear(start.getFullYear() - 1);
+    return start;
+  }
+
+  return new Date(0);
+}
+
+export function getEffectivePeriodStart(
+  period: PortfolioPeriod,
+  purchasedAt: string,
+  now: Date,
+): Date {
+  const periodStart = getPeriodStartDate(period, now);
+  const purchaseDate = new Date(`${purchasedAt}T00:00:00.000Z`);
+  return purchaseDate > periodStart ? purchaseDate : periodStart;
+}
+
+function getCurrencyCode(currency: PortfolioFiatCurrency): PortfolioSnapshot['fiatCurrency'] {
+  return currency.toUpperCase() as PortfolioSnapshot['fiatCurrency'];
+}
+
+function toUnixSeconds(date: Date): number {
+  return Math.floor(date.getTime() / 1_000);
+}
+
+function createSampleTimes(from: Date, to: Date): readonly number[] {
+  const fromMs = from.getTime();
+  const toMs = to.getTime();
+  const distance = Math.max(toMs - fromMs, sampleCount - 1);
+
+  return Array.from({ length: sampleCount }, (_, index) =>
+    Math.round(fromMs + (distance * index) / (sampleCount - 1)),
+  );
+}
+
+function findNearestPrice(points: readonly CoinGeckoChartPoint[], timestamp: number): number {
+  if (points.length === 0) {
+    return 0;
+  }
+
+  const target = timestamp;
+  const firstPoint = points[0];
+  if (firstPoint === undefined) {
+    return 0;
+  }
+  let nearestPoint = firstPoint;
+
+  points.forEach((point) => {
+    if (Math.abs(point.timestamp - target) < Math.abs(nearestPoint.timestamp - target)) {
+      nearestPoint = point;
+    }
+  });
+
+  return nearestPoint.price;
+}
+
+function buildPricePoints(
+  holding: PortfolioHoldingConfig,
+  marketChart: readonly CoinGeckoChartPoint[],
+  period: PortfolioPeriod,
+  now: Date,
+): readonly PricePoint[] {
+  const start = getEffectivePeriodStart(period, holding.purchasedAt, now);
+  return createSampleTimes(start, now).map((timestamp) => ({
+    timestamp: new Date(timestamp).toISOString(),
+    value: findNearestPrice(marketChart, timestamp) * holding.amount,
+  }));
+}
+
+function buildTotalPoints(series: readonly AssetMarketSeries[], period: PortfolioPeriod): readonly PricePoint[] {
+  const periodSeries = series.map((item) => item.prices[period]);
+  const referenceSeries = periodSeries[0] ?? [];
+
+  return referenceSeries.map((point, index) => ({
+    timestamp: point.timestamp,
+    value: periodSeries.reduce((sum, points) => sum + (points[index]?.value ?? 0), 0),
+  }));
+}
+
+async function buildHoldingSeries(
+  holding: PortfolioHoldingConfig,
+  currency: PortfolioFiatCurrency,
+  activePeriod: PortfolioPeriod,
+  now: Date,
+): Promise<AssetMarketSeries> {
+  const periods: readonly PortfolioPeriod[] = ['1D', '1W', '1M', 'YTD', '1Y', 'ALL'];
+  const start = getEffectivePeriodStart(activePeriod, holding.purchasedAt, now);
+  const chart = await getCoinGeckoMarketChart(
+    holding.coinGeckoId,
+    currency,
+    toUnixSeconds(start),
+    toUnixSeconds(now),
+  );
+  const activePricePoints = buildPricePoints(holding, chart, activePeriod, now);
+  const priceEntries = periods.map((period) => [
+    period,
+    period === activePeriod ? activePricePoints : [],
+  ] as const);
+
+  return {
+    assetId: holding.id,
+    prices: Object.fromEntries(priceEntries) as AssetMarketSeries['prices'],
+  };
+}
+
+export async function buildOnlinePortfolioSnapshot(
+  settings: PortfolioSettingsConfig,
+  activePeriod: PortfolioPeriod,
+  now = new Date(),
+): Promise<PortfolioSnapshot> {
+  const prices = await getCoinGeckoPrices(
+    settings.holdings.map((holding) => holding.coinGeckoId),
+    settings.fiatCurrency,
+  );
+  const holdingSeries = await Promise.all(
+    settings.holdings.map((holding) => buildHoldingSeries(holding, settings.fiatCurrency, activePeriod, now)),
+  );
+  const periods: readonly PortfolioPeriod[] = ['1D', '1W', '1M', 'YTD', '1Y', 'ALL'];
+  const totalPrices = Object.fromEntries(
+    periods.map((period) => [period, period === activePeriod ? buildTotalPoints(holdingSeries, period) : []]),
+  ) as AssetMarketSeries['prices'];
+
+  const assets: readonly PortfolioAsset[] = settings.holdings.map((holding) => ({
+    id: holding.id,
+    label: holding.symbol,
+    symbol: holding.symbol,
+    amount: (prices.get(holding.coinGeckoId) ?? 0) * holding.amount,
+    kind: 'crypto',
+  }));
+
+  const snapshot = {
+    people: [
+      {
+        id: 'settings-person',
+        name: settings.personName,
+        selectedAssetId: 'total',
+        assets,
+      },
+    ],
+    marketSeries: [{ assetId: 'total', prices: totalPrices }, ...holdingSeries],
+    fiatCurrency: getCurrencyCode(settings.fiatCurrency),
+    futurePriceProvider: 'coingecko',
+    futureStakingProvider: 'beacon-api',
+    mode: 'online',
+  } satisfies PortfolioSnapshot;
+
+  return portfolioSnapshotSchema.parse(snapshot);
+}

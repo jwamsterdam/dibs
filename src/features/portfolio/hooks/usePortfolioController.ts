@@ -1,12 +1,16 @@
 import { useMemo } from 'react';
 import { useAtom } from 'jotai';
+import { useQuery } from '@tanstack/react-query';
+import { indexedDbPortfolioConfigRepository } from '../data/portfolioConfigRepository';
+import { buildOnlinePortfolioSnapshot } from '../data/onlinePortfolioData';
 import { mockPortfolioSnapshot } from '../data/mockPortfolioSnapshot';
 import {
   changeDisplayModeAtom,
+  isSettingsOpenAtom,
   selectedAssetByPersonAtom,
   selectedPeriodAtom,
 } from '../store/portfolio.atoms';
-import type { PortfolioAsset, PortfolioPeriod, PricePoint } from '../types/portfolio';
+import type { PortfolioAsset, PortfolioPeriod, PortfolioSnapshot, PricePoint } from '../types/portfolio';
 
 const periods: readonly PortfolioPeriod[] = ['1D', '1W', '1M', 'YTD', '1Y', 'ALL'];
 const demoEthStakingRewardsEur = 18_420;
@@ -26,10 +30,16 @@ export type PortfolioController = {
   readonly periods: readonly PortfolioPeriod[];
   readonly selectedPeriod: PortfolioPeriod;
   readonly selectedLabel: string;
+  readonly fiatCurrency: PortfolioSnapshot['fiatCurrency'];
   readonly rows: readonly PortfolioRow[];
   readonly chartPoints: readonly PricePoint[];
   readonly rewardValue: number;
+  readonly isSettingsOpen: boolean;
+  readonly isOnlinePortfolio: boolean;
+  readonly isOnlineLoading: boolean;
   readonly changeDisplayMode: 'absolute' | 'percentage';
+  readonly openSettings: () => void;
+  readonly closeSettings: () => void;
   readonly selectPeriod: (period: PortfolioPeriod) => void;
   readonly selectAsset: (assetId: string) => void;
   readonly toggleChangeDisplayMode: () => void;
@@ -59,7 +69,24 @@ export function usePortfolioController(): PortfolioController {
   const [selectedPeriod, setSelectedPeriod] = useAtom(selectedPeriodAtom);
   const [selectedAssets, setSelectedAssets] = useAtom(selectedAssetByPersonAtom);
   const [changeDisplayMode, setChangeDisplayMode] = useAtom(changeDisplayModeAtom);
-  const person = mockPortfolioSnapshot.people[0];
+  const [isSettingsOpen, setIsSettingsOpen] = useAtom(isSettingsOpenAtom);
+  const settingsQuery = useQuery({
+    queryFn: () => indexedDbPortfolioConfigRepository.loadSettings(),
+    queryKey: ['portfolio-settings'],
+    staleTime: 5_000,
+  });
+  const onlineSnapshotQuery = useQuery({
+    enabled: settingsQuery.data !== null && settingsQuery.data !== undefined,
+    queryFn: () =>
+      buildOnlinePortfolioSnapshot(
+        settingsQuery.data ?? { fiatCurrency: 'eur', holdings: [], personName: 'JW' },
+        selectedPeriod,
+      ),
+    queryKey: ['portfolio-online-snapshot', settingsQuery.data, selectedPeriod],
+    staleTime: 60_000,
+  });
+  const snapshot = onlineSnapshotQuery.data ?? mockPortfolioSnapshot;
+  const person = snapshot.people[0];
 
   /* istanbul ignore next -- The Zod-validated mock snapshot always contains one person. */
   if (!person) {
@@ -94,13 +121,19 @@ export function usePortfolioController(): PortfolioController {
 
   return {
     personName: person.name,
+    fiatCurrency: snapshot.fiatCurrency,
     periods,
     selectedPeriod,
     selectedLabel: selectedAsset.label,
     rows,
     chartPoints: getSeries(selectedAsset.id, selectedPeriod),
     rewardValue: demoEthStakingRewardsEur,
+    isSettingsOpen,
+    isOnlinePortfolio: snapshot.mode === 'online',
+    isOnlineLoading: settingsQuery.isLoading || onlineSnapshotQuery.isFetching,
     changeDisplayMode,
+    openSettings: (): void => setIsSettingsOpen(true),
+    closeSettings: (): void => setIsSettingsOpen(false),
     selectPeriod: setSelectedPeriod,
     selectAsset: (assetId): void => {
       setSelectedAssets((current) => ({ ...current, [person.id]: assetId }));

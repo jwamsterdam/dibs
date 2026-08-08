@@ -44,8 +44,8 @@ export const portfolioSnapshotSchema = z.object({
       prices: periodPricesSchema,
     }),
   ),
-  fiatCurrency: z.literal('EUR'),
+  fiatCurrency: z.enum(['EUR', 'USD', 'GBP', 'CHF']),
   futurePriceProvider: z.literal('coingecko'),
   futureStakingProvider: z.literal('beacon-api'),
-  mode: z.literal('read-only-mock'),
+  mode: z.enum(['online', 'read-only-mock']),
 });
