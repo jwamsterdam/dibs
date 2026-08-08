@@ -107,6 +107,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
             <div className="grid gap-3">
               <ComboBox
                 allowsCustomValue
+                allowsEmptyCollection
                 className="grid gap-2 text-[0.82rem] font-medium text-fg-muted"
                 inputValue={controller.query}
                 menuTrigger="input"

@@ -16,13 +16,19 @@ describe('PortfolioChart', () => {
   });
 
   it('formats compact and small currency axis labels', () => {
-    expect(formatAxisCurrency(400_000, 'EUR')).toBe('€400K');
-    expect(formatAxisCurrency(900, 'EUR')).toBe('€900');
+    expect(formatAxisCurrency(400_000, 'EUR', 10_000)).toBe('€400K');
+    expect(formatAxisCurrency(900, 'EUR', 500)).toBe('€900');
   });
 
   it('formats axis labels using the configured fiat currency', () => {
-    expect(formatAxisCurrency(400_000, 'USD')).toBe('$400K');
-    expect(formatAxisCurrency(400_000, 'GBP')).toBe('£400K');
+    expect(formatAxisCurrency(400_000, 'USD', 10_000)).toBe('$400K');
+    expect(formatAxisCurrency(400_000, 'GBP', 10_000)).toBe('£400K');
+  });
+
+  it('avoids collapsing distinct ticks into the same compact label', () => {
+    expect(formatAxisCurrency(3_200, 'EUR', 100)).toBe('€3.200');
+    expect(formatAxisCurrency(3_350, 'EUR', 100)).toBe('€3.350');
+    expect(formatAxisCurrency(3_500, 'EUR', 100)).toBe('€3.500');
   });
   it('reduces timeline ticks to first, middle, and last labels', () => {
     expect(

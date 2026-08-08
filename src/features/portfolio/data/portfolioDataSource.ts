@@ -16,7 +16,7 @@ export const readOnlyMockPortfolioDataSource: PortfolioDataSource = {
 export const configuredPortfolioDataSource: PortfolioDataSource = {
   async getSnapshot(period) {
     const settings = await indexedDbPortfolioConfigRepository.loadSettings();
-    return settings === null
+    return settings === null || settings.holdings.length === 0
       ? readOnlyMockPortfolioDataSource.getSnapshot(period)
       : buildOnlinePortfolioSnapshot(settings, period);
   },

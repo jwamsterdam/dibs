@@ -50,12 +50,16 @@ function getCurrencySymbol(currencyCode: PortfolioFiatCurrencyCode): string {
   return parts.find((part) => part.type === 'currency')?.value ?? currencyCode;
 }
 
-export function formatAxisCurrency(value: number, currencyCode: PortfolioFiatCurrencyCode): string {
+export function formatAxisCurrency(
+  value: number,
+  currencyCode: PortfolioFiatCurrencyCode,
+  tickStep: number,
+): string {
   const symbol = getCurrencySymbol(currencyCode);
-  if (Math.abs(value) >= 1_000) {
+  if (tickStep >= 1_000) {
     return `${symbol}${Math.round(value / 1_000)}K`;
   }
-  return `${symbol}${Math.round(value)}`;
+  return `${symbol}${new Intl.NumberFormat('nl-NL').format(Math.round(value))}`;
 }
 
 export function getTimelineTicks(points: readonly ChartPoint[]): readonly string[] {
@@ -107,6 +111,7 @@ export function PortfolioChart({
   const timelineTicks = getTimelineTicks(points);
   const valueDomain = getValueDomain(points);
   const valueTicks = getValueTicks(valueDomain);
+  const tickStep = valueTicks[1] - valueTicks[0];
 
   return (
     <section aria-label={ariaLabel} className="h-[13.6rem]">
@@ -136,7 +141,7 @@ export function PortfolioChart({
           orientation="right"
           tick={{ fill: 'var(--color-chart-axis)', fontSize: 10 }}
           ticks={valueTicks}
-          tickFormatter={(value: number) => formatAxisCurrency(value, currencyCode)}
+          tickFormatter={(value: number) => formatAxisCurrency(value, currencyCode, tickStep)}
           tickLine={false}
           tickMargin={7}
           width={40}

@@ -10,10 +10,25 @@ import type { PortfolioSnapshot } from '../types/portfolio';
 jest.mock('./onlinePortfolioData');
 jest.mock('./portfolioConfigRepository');
 
-const settings: PortfolioSettingsConfig = {
+const emptySettings: PortfolioSettingsConfig = {
   personName: 'JW',
   fiatCurrency: 'eur',
   holdings: [],
+};
+
+const settingsWithHoldings: PortfolioSettingsConfig = {
+  personName: 'JW',
+  fiatCurrency: 'eur',
+  holdings: [
+    {
+      id: 'btc-1',
+      coinGeckoId: 'bitcoin',
+      name: 'Bitcoin',
+      symbol: 'BTC',
+      amount: 0.5,
+      purchasedAt: '2026-01-10',
+    },
+  ],
 };
 
 const onlineSnapshot: PortfolioSnapshot = {
@@ -50,13 +65,24 @@ describe('configuredPortfolioDataSource', () => {
     expect(buildOnlinePortfolioSnapshot).not.toHaveBeenCalled();
   });
 
+  it('falls back to the read-only mock snapshot once all holdings are removed', async () => {
+    jest.mocked(indexedDbPortfolioConfigRepository.loadSettings).mockResolvedValue(emptySettings);
+
+    const snapshot = await configuredPortfolioDataSource.getSnapshot('1D');
+
+    expect(snapshot.mode).toBe('read-only-mock');
+    expect(buildOnlinePortfolioSnapshot).not.toHaveBeenCalled();
+  });
+
   it('builds an online snapshot from persisted settings for the requested period', async () => {
-    jest.mocked(indexedDbPortfolioConfigRepository.loadSettings).mockResolvedValue(settings);
+    jest
+      .mocked(indexedDbPortfolioConfigRepository.loadSettings)
+      .mockResolvedValue(settingsWithHoldings);
     jest.mocked(buildOnlinePortfolioSnapshot).mockResolvedValue(onlineSnapshot);
 
     const snapshot = await configuredPortfolioDataSource.getSnapshot('1W');
 
-    expect(buildOnlinePortfolioSnapshot).toHaveBeenCalledWith(settings, '1W');
+    expect(buildOnlinePortfolioSnapshot).toHaveBeenCalledWith(settingsWithHoldings, '1W');
     expect(snapshot).toBe(onlineSnapshot);
   });
 });
