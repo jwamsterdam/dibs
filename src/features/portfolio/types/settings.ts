@@ -1,24 +1,17 @@
-export type PortfolioFiatCurrency = 'eur' | 'usd' | 'gbp' | 'chf';
+import type { z } from 'zod';
+import type {
+  coinSearchResultSchema,
+  portfolioFiatCurrencySchema,
+  portfolioHoldingConfigSchema,
+  portfolioSettingsConfigSchema,
+} from '../validation/settings.schema';
 
-export type PortfolioHoldingConfig = {
-  readonly id: string;
-  readonly coinGeckoId: string;
-  readonly name: string;
-  readonly symbol: string;
-  readonly amount: number;
-  readonly purchasedAt: string;
-};
+export const PORTFOLIO_FIAT_CURRENCIES = ['eur', 'usd', 'gbp', 'chf'] as const;
 
-export type PortfolioSettingsConfig = {
-  readonly personName: string;
-  readonly fiatCurrency: PortfolioFiatCurrency;
-  readonly holdings: readonly PortfolioHoldingConfig[];
-};
+export type PortfolioFiatCurrency = z.infer<typeof portfolioFiatCurrencySchema>;
 
-export type CoinSearchResult = {
-  readonly id: string;
-  readonly name: string;
-  readonly symbol: string;
-  readonly marketCapRank: number | null;
-  readonly thumb: string;
-};
+export type PortfolioHoldingConfig = z.infer<typeof portfolioHoldingConfigSchema>;
+
+export type PortfolioSettingsConfig = z.infer<typeof portfolioSettingsConfigSchema>;
+
+export type CoinSearchResult = z.infer<typeof coinSearchResultSchema>;

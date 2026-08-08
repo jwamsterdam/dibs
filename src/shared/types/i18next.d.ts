@@ -1,13 +1,14 @@
 import 'i18next';
-import type { defaultNS, resources } from '@/shared/i18n';
-import type enPortfolio from '@/shared/i18n/locales/en/portfolio.json';
+import type { defaultNS } from '@/shared/i18n';
+import type enCommon from '@/shared/i18n/locales/en/common.json';
 
-// Type-safe translation keys: missing/misspelled keys become compile errors.
+export interface I18nResources {
+  common: typeof enCommon;
+}
+
 declare module 'i18next' {
   interface CustomTypeOptions {
     defaultNS: typeof defaultNS;
-    resources: (typeof resources)['en'] & {
-      portfolio: typeof enPortfolio;
-    };
+    resources: I18nResources;
   }
 }

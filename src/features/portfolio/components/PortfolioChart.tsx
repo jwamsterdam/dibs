@@ -1,14 +1,10 @@
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import type { PortfolioFiatCurrencyCode } from '../types/portfolio';
 
 type PortfolioChartProps = {
   readonly ariaLabel: string;
   readonly points: readonly ChartPoint[];
+  readonly currencyCode: PortfolioFiatCurrencyCode;
 };
 
 export type ChartPoint = {
@@ -44,11 +40,22 @@ function getNiceStep(range: number): number {
   return base * 10;
 }
 
-export function formatAxisCurrency(value: number): string {
+function getCurrencySymbol(currencyCode: PortfolioFiatCurrencyCode): string {
+  const parts = new Intl.NumberFormat('nl-NL', {
+    currency: currencyCode,
+    currencyDisplay: 'narrowSymbol',
+    style: 'currency',
+  }).formatToParts(0);
+
+  return parts.find((part) => part.type === 'currency')?.value ?? currencyCode;
+}
+
+export function formatAxisCurrency(value: number, currencyCode: PortfolioFiatCurrencyCode): string {
+  const symbol = getCurrencySymbol(currencyCode);
   if (Math.abs(value) >= 1_000) {
-    return `€${Math.round(value / 1_000)}K`;
+    return `${symbol}${Math.round(value / 1_000)}K`;
   }
-  return `€${Math.round(value)}`;
+  return `${symbol}${Math.round(value)}`;
 }
 
 export function getTimelineTicks(points: readonly ChartPoint[]): readonly string[] {
@@ -83,14 +90,20 @@ export function getValueDomain(points: readonly ChartPoint[]): readonly [number,
   return [minimumDomain, maximumDomain];
 }
 
-export function getValueTicks(domain: readonly [number, number]): readonly [number, number, number] {
+export function getValueTicks(
+  domain: readonly [number, number],
+): readonly [number, number, number] {
   const [minimumDomain, maximumDomain] = domain;
   const middleTick = Math.round((minimumDomain + maximumDomain) / 2);
 
   return [minimumDomain, middleTick, maximumDomain];
 }
 
-export function PortfolioChart({ ariaLabel, points }: PortfolioChartProps): React.JSX.Element {
+export function PortfolioChart({
+  ariaLabel,
+  points,
+  currencyCode,
+}: PortfolioChartProps): React.JSX.Element {
   const timelineTicks = getTimelineTicks(points);
   const valueDomain = getValueDomain(points);
   const valueTicks = getValueTicks(valueDomain);
@@ -123,7 +136,7 @@ export function PortfolioChart({ ariaLabel, points }: PortfolioChartProps): Reac
           orientation="right"
           tick={{ fill: 'var(--color-chart-axis)', fontSize: 10 }}
           ticks={valueTicks}
-          tickFormatter={formatAxisCurrency}
+          tickFormatter={(value: number) => formatAxisCurrency(value, currencyCode)}
           tickLine={false}
           tickMargin={7}
           width={40}

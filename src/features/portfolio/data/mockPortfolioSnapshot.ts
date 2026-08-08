@@ -1,4 +1,9 @@
-import type { PortfolioPeriod, PortfolioSnapshot } from '../types/portfolio';
+import type {
+  AssetMarketSeries,
+  PortfolioPeriod,
+  PortfolioSnapshot,
+  PricePoint,
+} from '../types/portfolio';
 import { portfolioSnapshotSchema } from '../validation/portfolio.schema';
 
 const baseValues = {
@@ -17,10 +22,7 @@ const periodStartValues: Record<PortfolioPeriod, Record<keyof typeof baseValues,
   ALL: { total: 124_000, btc: 8_200, eth: 6_800, usdc: 12_500 },
 };
 
-function buildPoints(
-  period: PortfolioPeriod,
-  assetId: keyof typeof baseValues,
-): readonly { readonly timestamp: string; readonly value: number }[] {
+function buildPoints(period: PortfolioPeriod, assetId: keyof typeof baseValues): PricePoint[] {
   const startValue = periodStartValues[period][assetId];
   const endValue = baseValues[assetId];
 
@@ -34,7 +36,7 @@ function buildPoints(
   });
 }
 
-function buildSeries(assetId: keyof typeof baseValues): PortfolioSnapshot['marketSeries'][number] {
+function buildSeries(assetId: keyof typeof baseValues): AssetMarketSeries {
   const prices = {
     '1D': buildPoints('1D', assetId),
     '1W': buildPoints('1W', assetId),
@@ -60,7 +62,7 @@ const snapshot = {
       ],
     },
   ],
-  marketSeries: Object.keys(baseValues).map((assetId) => buildSeries(assetId as keyof typeof baseValues)),
+  marketSeries: (Object.keys(baseValues) as (keyof typeof baseValues)[]).map(buildSeries),
   fiatCurrency: 'EUR',
   futurePriceProvider: 'coingecko',
   futureStakingProvider: 'beacon-api',

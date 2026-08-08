@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import type { PortfolioFiatCurrency } from '../types/settings';
+import { apiGet } from '@/shared/lib/http/client';
+import type { CoinSearchResult, PortfolioFiatCurrency } from '../types/settings';
+import { coinSearchResultSchema } from '../validation/settings.schema';
 import { getCachedOrFetch } from './coingeckoCache';
 
 const COINGECKO_BASE_URL = 'https://api.coingecko.com/api/v3';
@@ -7,7 +9,7 @@ const searchCacheTtlMs = 24 * 60 * 60 * 1_000;
 const priceCacheTtlMs = 60 * 1_000;
 const chartCacheTtlMs = 30 * 60 * 1_000;
 
-const fallbackSearchCoins: readonly CoinGeckoSearchCoin[] = [
+const fallbackSearchCoins: readonly CoinSearchResult[] = [
   { id: 'bitcoin', marketCapRank: 1, name: 'Bitcoin', symbol: 'BTC', thumb: '' },
   { id: 'ethereum', marketCapRank: 2, name: 'Ethereum', symbol: 'ETH', thumb: '' },
   { id: 'solana', marketCapRank: 6, name: 'Solana', symbol: 'SOL', thumb: '' },
@@ -30,6 +32,17 @@ const coinSearchResponseSchema = z.object({
   ),
 });
 
+const mappedCoinSearchResponseSchema = coinSearchResponseSchema.transform(
+  (response): readonly CoinSearchResult[] =>
+    response.coins.map((coin) => ({
+      id: coin.id,
+      name: coin.name,
+      symbol: coin.symbol.toUpperCase(),
+      marketCapRank: coin.market_cap_rank,
+      thumb: coin.thumb,
+    })),
+);
+
 const simplePriceResponseSchema = z.record(
   z.object({
     eur: z.number().optional(),
@@ -43,14 +56,6 @@ const marketChartResponseSchema = z.object({
   prices: z.array(z.tuple([z.number(), z.number()])),
 });
 
-export type CoinGeckoSearchCoin = {
-  readonly id: string;
-  readonly name: string;
-  readonly symbol: string;
-  readonly marketCapRank: number | null;
-  readonly thumb: string;
-};
-
 export type CoinGeckoChartPoint = {
   readonly timestamp: number;
   readonly price: number;
@@ -62,15 +67,7 @@ function buildUrl(path: string, params: Record<string, string>): string {
   return url.toString();
 }
 
-async function fetchJson(url: string): Promise<unknown> {
-  const response = await fetch(url, { headers: { Accept: 'application/json' } });
-  if (!response.ok) {
-    throw new Error(`CoinGecko request failed (${response.status})`);
-  }
-  return await response.json();
-}
-
-export async function searchCoinGeckoCoins(query: string): Promise<readonly CoinGeckoSearchCoin[]> {
+export async function searchCoinGeckoCoins(query: string): Promise<readonly CoinSearchResult[]> {
   const normalizedQuery = query.trim().toLowerCase();
   if (normalizedQuery.length < 2) {
     return [];
@@ -84,22 +81,15 @@ export async function searchCoinGeckoCoins(query: string): Promise<readonly Coin
   );
 
   try {
-    const response = await getCachedOrFetch(
+    const mappedCoins = await getCachedOrFetch(
       `search:${normalizedQuery}`,
       searchCacheTtlMs,
-      coinSearchResponseSchema,
-      () => fetchJson(buildUrl('/search', { query: normalizedQuery })),
+      z.array(coinSearchResultSchema),
+      () => apiGet(buildUrl('/search', { query: normalizedQuery }), mappedCoinSearchResponseSchema),
     );
+    const topCoins = mappedCoins.slice(0, 8);
 
-    const mappedCoins = response.coins.slice(0, 8).map((coin) => ({
-      id: coin.id,
-      name: coin.name,
-      symbol: coin.symbol.toUpperCase(),
-      marketCapRank: coin.market_cap_rank,
-      thumb: coin.thumb,
-    }));
-
-    return mappedCoins.length > 0 ? mappedCoins : fallbackResults;
+    return topCoins.length > 0 ? topCoins : fallbackResults;
   } catch {
     return fallbackResults;
   }
@@ -118,7 +108,11 @@ export async function getCoinGeckoPrices(
     `prices:${currency}:${ids.join(',')}`,
     priceCacheTtlMs,
     simplePriceResponseSchema,
-    () => fetchJson(buildUrl('/simple/price', { ids: ids.join(','), vs_currencies: currency })),
+    () =>
+      apiGet(
+        buildUrl('/simple/price', { ids: ids.join(','), vs_currencies: currency }),
+        simplePriceResponseSchema,
+      ),
   );
 
   return new Map(
@@ -142,12 +136,13 @@ export async function getCoinGeckoMarketChart(
     chartCacheTtlMs,
     marketChartResponseSchema,
     () =>
-      fetchJson(
+      apiGet(
         buildUrl(`/coins/${coinId}/market_chart/range`, {
           from: String(roundedFrom),
           to: String(roundedTo),
           vs_currency: currency,
         }),
+        marketChartResponseSchema,
       ),
   );
 

@@ -18,5 +18,22 @@
   },
   "rewards": {
     "ethStakingRewards": "ETH staking rewards"
+  },
+  "status": {
+    "onlineError": "Couldn't load your live portfolio — showing sample data"
+  },
+  "settings": {
+    "title": "Settings",
+    "close": "Close settings",
+    "saving": "Saving",
+    "saveError": "Failed to save",
+    "coin": "Coin",
+    "searchPlaceholder": "Search coin",
+    "searching": "Searching...",
+    "currency": "Currency",
+    "amount": "Amount",
+    "purchasedAt": "Purchased",
+    "addHolding": "Add coin",
+    "removeHolding": "Remove {{symbol}}"
   }
 }

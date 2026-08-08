@@ -18,5 +18,22 @@
   },
   "rewards": {
     "ethStakingRewards": "ETH staking rewards"
+  },
+  "status": {
+    "onlineError": "Live portefeuille kon niet worden geladen — voorbeelddata getoond"
+  },
+  "settings": {
+    "title": "Instellingen",
+    "close": "Sluit instellingen",
+    "saving": "Opslaan",
+    "saveError": "Opslaan mislukt",
+    "coin": "Coin",
+    "searchPlaceholder": "Zoek coin",
+    "searching": "Zoeken...",
+    "currency": "Valuta",
+    "amount": "Aantal",
+    "purchasedAt": "Aankoop",
+    "addHolding": "Voeg coin toe",
+    "removeHolding": "Verwijder {{symbol}}"
   }
 }

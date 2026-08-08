@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
 import { useAtom } from 'jotai';
 import { useQuery } from '@tanstack/react-query';
-import { indexedDbPortfolioConfigRepository } from '../data/portfolioConfigRepository';
-import { buildOnlinePortfolioSnapshot } from '../data/onlinePortfolioData';
+import { configuredPortfolioDataSource } from '../data/portfolioDataSource';
 import { mockPortfolioSnapshot } from '../data/mockPortfolioSnapshot';
 import {
   changeDisplayModeAtom,
@@ -10,9 +9,17 @@ import {
   selectedAssetByPersonAtom,
   selectedPeriodAtom,
 } from '../store/portfolio.atoms';
-import type { PortfolioAsset, PortfolioPeriod, PortfolioSnapshot, PricePoint } from '../types/portfolio';
+import { PORTFOLIO_PERIODS } from '../types/portfolio';
+import type {
+  ChangeDisplayMode,
+  PortfolioAsset,
+  PortfolioPeriod,
+  PortfolioSnapshot,
+  PricePoint,
+} from '../types/portfolio';
 
-const periods: readonly PortfolioPeriod[] = ['1D', '1W', '1M', 'YTD', '1Y', 'ALL'];
+type SelectionKey = string | number;
+
 const demoEthStakingRewardsEur = 18_420;
 
 export type PortfolioRow = {
@@ -37,16 +44,21 @@ export type PortfolioController = {
   readonly isSettingsOpen: boolean;
   readonly isOnlinePortfolio: boolean;
   readonly isOnlineLoading: boolean;
-  readonly changeDisplayMode: 'absolute' | 'percentage';
+  readonly isOnlineError: boolean;
+  readonly changeDisplayMode: ChangeDisplayMode;
   readonly openSettings: () => void;
   readonly closeSettings: () => void;
-  readonly selectPeriod: (period: PortfolioPeriod) => void;
+  readonly selectPeriodByKey: (key: SelectionKey) => void;
   readonly selectAsset: (assetId: string) => void;
   readonly toggleChangeDisplayMode: () => void;
 };
 
-function getSeries(assetId: string, period: PortfolioPeriod): readonly PricePoint[] {
-  const series = mockPortfolioSnapshot.marketSeries.find((item) => item.assetId === assetId);
+function getSeries(
+  snapshot: PortfolioSnapshot,
+  assetId: string,
+  period: PortfolioPeriod,
+): readonly PricePoint[] {
+  const series = snapshot.marketSeries.find((item) => item.assetId === assetId);
   return series?.prices[period] ?? [];
 }
 
@@ -70,25 +82,15 @@ export function usePortfolioController(): PortfolioController {
   const [selectedAssets, setSelectedAssets] = useAtom(selectedAssetByPersonAtom);
   const [changeDisplayMode, setChangeDisplayMode] = useAtom(changeDisplayModeAtom);
   const [isSettingsOpen, setIsSettingsOpen] = useAtom(isSettingsOpenAtom);
-  const settingsQuery = useQuery({
-    queryFn: () => indexedDbPortfolioConfigRepository.loadSettings(),
-    queryKey: ['portfolio-settings'],
-    staleTime: 5_000,
+  const snapshotQuery = useQuery({
+    queryFn: () => configuredPortfolioDataSource.getSnapshot(selectedPeriod),
+    queryKey: ['portfolio-snapshot', selectedPeriod],
+    staleTime: 30_000,
   });
-  const onlineSnapshotQuery = useQuery({
-    enabled: settingsQuery.data !== null && settingsQuery.data !== undefined,
-    queryFn: () =>
-      buildOnlinePortfolioSnapshot(
-        settingsQuery.data ?? { fiatCurrency: 'eur', holdings: [], personName: 'JW' },
-        selectedPeriod,
-      ),
-    queryKey: ['portfolio-online-snapshot', settingsQuery.data, selectedPeriod],
-    staleTime: 60_000,
-  });
-  const snapshot = onlineSnapshotQuery.data ?? mockPortfolioSnapshot;
+  const snapshot = snapshotQuery.data ?? mockPortfolioSnapshot;
   const person = snapshot.people[0];
 
-  /* istanbul ignore next -- The Zod-validated mock snapshot always contains one person. */
+  /* istanbul ignore next -- The Zod-validated snapshot always contains one person. */
   if (!person) {
     throw new Error('Portfolio requires at least one person');
   }
@@ -103,7 +105,7 @@ export function usePortfolioController(): PortfolioController {
   }
 
   const rows = assets.map((asset) => {
-    const points = getSeries(asset.id, selectedPeriod);
+    const points = getSeries(snapshot, asset.id, selectedPeriod);
     const firstValue = getFirstValue(points);
     const value = getLastValue(points);
     const changeValue = value - firstValue;
@@ -122,19 +124,25 @@ export function usePortfolioController(): PortfolioController {
   return {
     personName: person.name,
     fiatCurrency: snapshot.fiatCurrency,
-    periods,
+    periods: PORTFOLIO_PERIODS,
     selectedPeriod,
     selectedLabel: selectedAsset.label,
     rows,
-    chartPoints: getSeries(selectedAsset.id, selectedPeriod),
+    chartPoints: getSeries(snapshot, selectedAsset.id, selectedPeriod),
     rewardValue: demoEthStakingRewardsEur,
     isSettingsOpen,
     isOnlinePortfolio: snapshot.mode === 'online',
-    isOnlineLoading: settingsQuery.isLoading || onlineSnapshotQuery.isFetching,
+    isOnlineLoading: snapshotQuery.isLoading,
+    isOnlineError: snapshotQuery.isError,
     changeDisplayMode,
     openSettings: (): void => setIsSettingsOpen(true),
     closeSettings: (): void => setIsSettingsOpen(false),
-    selectPeriod: setSelectedPeriod,
+    selectPeriodByKey: (key): void => {
+      const nextPeriod = PORTFOLIO_PERIODS.find((period) => period === key);
+      if (nextPeriod !== undefined) {
+        setSelectedPeriod(nextPeriod);
+      }
+    },
     selectAsset: (assetId): void => {
       setSelectedAssets((current) => ({ ...current, [person.id]: assetId }));
     },

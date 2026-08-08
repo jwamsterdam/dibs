@@ -7,3 +7,6 @@ type ClassValue = string | false | null | undefined;
 export function cn(...classes: ClassValue[]): string {
   return classes.filter(Boolean).join(' ');
 }
+
+export const focusRingClassName =
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary';

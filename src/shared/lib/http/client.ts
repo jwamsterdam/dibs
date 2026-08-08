@@ -1,4 +1,4 @@
-import type { ZodType } from 'zod';
+import type { ZodType, ZodTypeDef } from 'zod';
 
 /**
  * Minimal typed HTTP client — the interim data seam. Feature `api/` layers call these
@@ -24,7 +24,7 @@ function toUrl(path: string): string {
   return new URL(path, origin).toString();
 }
 
-export async function apiGet<T>(path: string, schema: ZodType<T>): Promise<T> {
+export async function apiGet<T>(path: string, schema: ZodType<T, ZodTypeDef, unknown>): Promise<T> {
   const res = await fetch(toUrl(path), { headers: { Accept: 'application/json' } });
   if (!res.ok) {
     throw new ApiError(res.status, `GET ${path} failed (${res.status})`);
@@ -35,7 +35,7 @@ export async function apiGet<T>(path: string, schema: ZodType<T>): Promise<T> {
 export async function apiPost<TBody, TResult>(
   path: string,
   body: TBody,
-  schema: ZodType<TResult>,
+  schema: ZodType<TResult, ZodTypeDef, unknown>,
 ): Promise<TResult> {
   const res = await fetch(toUrl(path), {
     method: 'POST',

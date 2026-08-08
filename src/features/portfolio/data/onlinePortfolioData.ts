@@ -1,3 +1,4 @@
+import { PORTFOLIO_PERIODS } from '../types/portfolio';
 import type {
   AssetMarketSeries,
   PortfolioAsset,
@@ -5,9 +6,17 @@ import type {
   PortfolioSnapshot,
   PricePoint,
 } from '../types/portfolio';
-import type { PortfolioFiatCurrency, PortfolioHoldingConfig, PortfolioSettingsConfig } from '../types/settings';
+import type {
+  PortfolioFiatCurrency,
+  PortfolioHoldingConfig,
+  PortfolioSettingsConfig,
+} from '../types/settings';
 import { portfolioSnapshotSchema } from '../validation/portfolio.schema';
-import { getCoinGeckoMarketChart, getCoinGeckoPrices, type CoinGeckoChartPoint } from './coingeckoClient';
+import {
+  getCoinGeckoMarketChart,
+  getCoinGeckoPrices,
+  type CoinGeckoChartPoint,
+} from './coingeckoClient';
 
 const sampleCount = 7;
 
@@ -51,8 +60,18 @@ export function getEffectivePeriodStart(
   return purchaseDate > periodStart ? purchaseDate : periodStart;
 }
 
+const currencyCodesByFiatCurrency: Record<
+  PortfolioFiatCurrency,
+  PortfolioSnapshot['fiatCurrency']
+> = {
+  eur: 'EUR',
+  usd: 'USD',
+  gbp: 'GBP',
+  chf: 'CHF',
+};
+
 function getCurrencyCode(currency: PortfolioFiatCurrency): PortfolioSnapshot['fiatCurrency'] {
-  return currency.toUpperCase() as PortfolioSnapshot['fiatCurrency'];
+  return currencyCodesByFiatCurrency[currency];
 }
 
 function toUnixSeconds(date: Date): number {
@@ -103,7 +122,10 @@ function buildPricePoints(
   }));
 }
 
-function buildTotalPoints(series: readonly AssetMarketSeries[], period: PortfolioPeriod): readonly PricePoint[] {
+function buildTotalPoints(
+  series: readonly AssetMarketSeries[],
+  period: PortfolioPeriod,
+): readonly PricePoint[] {
   const periodSeries = series.map((item) => item.prices[period]);
   const referenceSeries = periodSeries[0] ?? [];
 
@@ -119,7 +141,6 @@ async function buildHoldingSeries(
   activePeriod: PortfolioPeriod,
   now: Date,
 ): Promise<AssetMarketSeries> {
-  const periods: readonly PortfolioPeriod[] = ['1D', '1W', '1M', 'YTD', '1Y', 'ALL'];
   const start = getEffectivePeriodStart(activePeriod, holding.purchasedAt, now);
   const chart = await getCoinGeckoMarketChart(
     holding.coinGeckoId,
@@ -128,10 +149,9 @@ async function buildHoldingSeries(
     toUnixSeconds(now),
   );
   const activePricePoints = buildPricePoints(holding, chart, activePeriod, now);
-  const priceEntries = periods.map((period) => [
-    period,
-    period === activePeriod ? activePricePoints : [],
-  ] as const);
+  const priceEntries = PORTFOLIO_PERIODS.map(
+    (period) => [period, period === activePeriod ? activePricePoints : []] as const,
+  );
 
   return {
     assetId: holding.id,
@@ -149,14 +169,18 @@ export async function buildOnlinePortfolioSnapshot(
     settings.fiatCurrency,
   );
   const holdingSeries = await Promise.all(
-    settings.holdings.map((holding) => buildHoldingSeries(holding, settings.fiatCurrency, activePeriod, now)),
+    settings.holdings.map((holding) =>
+      buildHoldingSeries(holding, settings.fiatCurrency, activePeriod, now),
+    ),
   );
-  const periods: readonly PortfolioPeriod[] = ['1D', '1W', '1M', 'YTD', '1Y', 'ALL'];
   const totalPrices = Object.fromEntries(
-    periods.map((period) => [period, period === activePeriod ? buildTotalPoints(holdingSeries, period) : []]),
+    PORTFOLIO_PERIODS.map((period) => [
+      period,
+      period === activePeriod ? buildTotalPoints(holdingSeries, period) : [],
+    ]),
   ) as AssetMarketSeries['prices'];
 
-  const assets: readonly PortfolioAsset[] = settings.holdings.map((holding) => ({
+  const assets: PortfolioAsset[] = settings.holdings.map((holding) => ({
     id: holding.id,
     label: holding.symbol,
     symbol: holding.symbol,

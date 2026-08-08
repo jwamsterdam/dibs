@@ -1,6 +1,9 @@
 import { forwardRef } from 'react';
-import { Button as AriaButton, type ButtonProps as AriaButtonProps } from 'react-aria-components/Button';
-import { cn } from '@/shared/lib/cn';
+import {
+  Button as AriaButton,
+  type ButtonProps as AriaButtonProps,
+} from 'react-aria-components/Button';
+import { cn, focusRingClassName } from '@/shared/lib/cn';
 
 export type ButtonVariant = 'ghost' | 'primary' | 'secondary';
 
@@ -28,6 +31,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       type={type}
       className={cn(
         'inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition',
+        focusRingClassName,
         VARIANT_CLASSES[variant],
         className,
       )}

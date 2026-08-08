@@ -11,9 +11,9 @@ import { join } from 'node:path';
 
 const ASSETS_DIR = 'dist/assets';
 
-// KB, gzipped.
+// KB, gzipped. See ADR-0005 for the react-hook-form bundle-impact rationale.
 const BUDGETS = {
-  totalJs: 310,
+  totalJs: 320,
   totalCss: 50,
   singleChunk: 200,
 };

@@ -1,47 +1,29 @@
-export type PortfolioPeriod = '1D' | '1W' | '1M' | 'YTD' | '1Y' | 'ALL';
+import type { z } from 'zod';
+import type {
+  assetMarketSeriesSchema,
+  portfolioAssetSchema,
+  portfolioPeriodSchema,
+  portfolioPersonSchema,
+  portfolioSnapshotSchema,
+  pricePointSchema,
+} from '../validation/portfolio.schema';
+
+export const PORTFOLIO_PERIODS = ['1D', '1W', '1M', 'YTD', '1Y', 'ALL'] as const;
 
 export type ChangeDisplayMode = 'absolute' | 'percentage';
 
-export type PortfolioAssetKind = 'crypto' | 'stablecoin' | 'staking' | 'total';
+export type PortfolioPeriod = z.infer<typeof portfolioPeriodSchema>;
 
-export type PortfolioFiatCurrencyCode = 'EUR' | 'USD' | 'GBP' | 'CHF';
+export type PortfolioAssetKind = z.infer<typeof portfolioAssetSchema>['kind'];
 
-export type PortfolioAsset = {
-  readonly id: string;
-  readonly label: string;
-  readonly symbol: string;
-  readonly amount: number;
-  readonly kind: PortfolioAssetKind;
-  readonly staking?:
-    | {
-    readonly type: 'ethereum-0x02';
-    readonly availableRewardsEth: number;
-      }
-    | undefined;
-};
+export type PortfolioAsset = z.infer<typeof portfolioAssetSchema>;
 
-export type PortfolioPerson = {
-  readonly id: string;
-  readonly name: string;
-  readonly selectedAssetId: string;
-  readonly assets: readonly PortfolioAsset[];
-};
+export type PortfolioPerson = z.infer<typeof portfolioPersonSchema>;
 
-export type PricePoint = {
-  readonly timestamp: string;
-  readonly value: number;
-};
+export type PricePoint = z.infer<typeof pricePointSchema>;
 
-export type AssetMarketSeries = {
-  readonly assetId: string;
-  readonly prices: Record<PortfolioPeriod, readonly PricePoint[]>;
-};
+export type AssetMarketSeries = z.infer<typeof assetMarketSeriesSchema>;
 
-export type PortfolioSnapshot = {
-  readonly people: readonly PortfolioPerson[];
-  readonly marketSeries: readonly AssetMarketSeries[];
-  readonly fiatCurrency: PortfolioFiatCurrencyCode;
-  readonly futurePriceProvider: 'coingecko';
-  readonly futureStakingProvider: 'beacon-api';
-  readonly mode: 'online' | 'read-only-mock';
-};
+export type PortfolioSnapshot = z.infer<typeof portfolioSnapshotSchema>;
+
+export type PortfolioFiatCurrencyCode = PortfolioSnapshot['fiatCurrency'];

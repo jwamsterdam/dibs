@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import {
   Button as ComboBoxButton,
   ComboBox,
@@ -6,7 +7,6 @@ import {
   ListBox as ComboBoxListBox,
   ListBoxItem as ComboBoxListBoxItem,
   Popover as ComboBoxPopover,
-  type Key,
 } from 'react-aria-components/ComboBox';
 import { Dialog, Heading } from 'react-aria-components/Dialog';
 import { Modal, ModalOverlay } from 'react-aria-components/Modal';
@@ -21,39 +21,16 @@ import {
 } from 'react-aria-components/Select';
 import { Input, Label, TextField } from 'react-aria-components/TextField';
 import { Button } from '@/shared/components/Button/Button';
-import type { PortfolioFiatCurrency } from '../types/settings';
+import { focusRingClassName } from '@/shared/lib/cn';
 import { usePortfolioSettingsController } from '../hooks/usePortfolioSettingsController';
 
 type SettingsPanelProps = {
   readonly onClose: () => void;
 };
 
-const currencies: readonly PortfolioFiatCurrency[] = ['eur', 'usd', 'gbp', 'chf'];
-
 export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Element {
   const controller = usePortfolioSettingsController();
-
-  function selectCoin(key: Key | null): void {
-    if (key === null) {
-      return;
-    }
-
-    const coin = controller.searchResults.find((item) => item.id === key);
-    if (coin !== undefined) {
-      controller.selectCoin(coin);
-    }
-  }
-
-  function selectCurrency(key: Key | null): void {
-    if (typeof key !== 'string') {
-      return;
-    }
-
-    const currency = currencies.find((item) => item === key);
-    if (currency !== undefined) {
-      controller.setCurrency(currency);
-    }
-  }
+  const { t } = useTranslation('portfolio');
 
   return (
     <ModalOverlay
@@ -69,8 +46,8 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
         <Dialog className="flex h-full flex-col outline-none">
           <header className="grid grid-cols-[2.25rem_1fr_2.25rem] items-center pb-4">
             <Button
-              aria-label="Sluit instellingen"
-              className="grid min-h-9 min-w-9 place-items-center rounded-full p-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+              aria-label={t('settings.close')}
+              className="grid min-h-9 min-w-9 place-items-center rounded-full p-0"
               onPress={onClose}
               variant="ghost"
             >
@@ -80,29 +57,35 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
               />
             </Button>
             <Heading className="text-center text-[1.25rem] font-bold leading-tight" slot="title">
-              Settings
+              {t('settings.title')}
             </Heading>
             <span className="text-right text-[0.78rem] text-fg-muted">
-              {controller.isSaving ? 'Saving' : ''}
+              {controller.isSaving ? t('settings.saving') : ''}
             </span>
           </header>
+
+          {controller.saveError ? (
+            <p className="pb-3 text-[0.78rem] text-loss" role="status">
+              {t('settings.saveError')}
+            </p>
+          ) : null}
 
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-4">
             <div className="grid gap-3">
               <ComboBox
                 allowsCustomValue
                 className="grid gap-2 text-[0.82rem] font-medium text-fg-muted"
-                inputValue={controller.form.query}
+                inputValue={controller.query}
                 menuTrigger="input"
                 onInputChange={controller.setQuery}
-                onSelectionChange={selectCoin}
-                selectedKey={controller.form.selectedCoin?.id ?? null}
+                onSelectionChange={controller.selectCoinByKey}
+                selectedKey={controller.selectedCoin?.id ?? null}
               >
-                <ComboBoxLabel>Coin</ComboBoxLabel>
+                <ComboBoxLabel>{t('settings.coin')}</ComboBoxLabel>
                 <div className="grid grid-cols-[minmax(0,1fr)_2.25rem] rounded-[0.85rem] border border-[var(--color-border-subtle)] bg-bg-primary focus-within:border-brand-primary">
                   <ComboBoxInput
                     className="h-11 min-w-0 rounded-[0.85rem] bg-bg-primary px-3 text-[1rem] text-fg-primary outline-none placeholder:text-fg-muted"
-                    placeholder="Zoek coin"
+                    placeholder={t('settings.searchPlaceholder')}
                   />
                   <ComboBoxButton className="grid h-11 place-items-center rounded-[0.85rem] text-fg-muted outline-none">
                     <span
@@ -128,16 +111,16 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
                 </ComboBoxPopover>
 
                 {controller.isSearching ? (
-                  <span className="text-[0.78rem] text-fg-muted">Zoeken...</span>
+                  <span className="text-[0.78rem] text-fg-muted">{t('settings.searching')}</span>
                 ) : null}
               </ComboBox>
 
               <Select
                 className="grid gap-2 text-[0.82rem] font-medium text-fg-muted"
-                onSelectionChange={selectCurrency}
+                onSelectionChange={controller.selectCurrencyByKey}
                 selectedKey={controller.settings.fiatCurrency}
               >
-                <SelectLabel>Valuta</SelectLabel>
+                <SelectLabel>{t('settings.currency')}</SelectLabel>
                 <SelectButton className="grid h-11 w-full grid-cols-[1fr_auto] items-center rounded-[0.85rem] border border-[var(--color-border-subtle)] bg-bg-primary px-3 text-left text-[1rem] font-normal uppercase text-fg-primary outline-none focus-visible:border-brand-primary">
                   <SelectValue />
                   <span
@@ -147,7 +130,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
                 </SelectButton>
                 <Popover className="w-[var(--trigger-width)] overflow-hidden rounded-[0.75rem] border border-[var(--color-border-subtle)] bg-bg-primary">
                   <ListBox className="p-1 outline-none">
-                    {currencies.map((currency) => (
+                    {controller.currencies.map((currency) => (
                       <ListBoxItem
                         className="cursor-default rounded-[0.45rem] px-3 py-2 text-[1rem] font-normal uppercase text-fg-primary outline-none data-[focused]:bg-bg-secondary data-[selected]:font-semibold"
                         id={currency}
@@ -163,22 +146,22 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
 
               <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
                 <TextField className="grid gap-2 text-[0.82rem] font-medium text-fg-muted">
-                  <Label>Aantal</Label>
+                  <Label>{t('settings.amount')}</Label>
                   <Input
-                    className="h-11 w-full min-w-0 rounded-[0.65rem] border border-[var(--color-border-subtle)] bg-bg-primary px-3 text-[1rem] text-fg-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+                    className={`h-11 w-full min-w-0 rounded-[0.65rem] border border-[var(--color-border-subtle)] bg-bg-primary px-3 text-[1rem] text-fg-primary ${focusRingClassName}`}
                     inputMode="decimal"
                     onChange={(event) => controller.setAmount(event.target.value)}
                     placeholder="0,00"
-                    value={controller.form.amount}
+                    value={controller.amount}
                   />
                 </TextField>
                 <TextField className="grid gap-2 text-[0.82rem] font-medium text-fg-muted">
-                  <Label>Aankoop</Label>
+                  <Label>{t('settings.purchasedAt')}</Label>
                   <Input
-                    className="h-11 w-full min-w-0 rounded-[0.65rem] border border-[var(--color-border-subtle)] bg-bg-primary px-2 text-[0.92rem] text-fg-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+                    className={`h-11 w-full min-w-0 rounded-[0.65rem] border border-[var(--color-border-subtle)] bg-bg-primary px-2 text-[0.92rem] text-fg-primary ${focusRingClassName}`}
                     onChange={(event) => controller.setPurchasedAt(event.target.value)}
                     type="date"
-                    value={controller.form.purchasedAt}
+                    value={controller.purchasedAt}
                   />
                 </TextField>
               </div>
@@ -186,9 +169,11 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
               <Button
                 className="h-11 rounded-[0.75rem] bg-brand-primary text-[1rem] font-semibold text-fg-on-brand disabled:opacity-40"
                 isDisabled={!controller.canAddHolding}
-                onPress={controller.addHolding}
+                onPress={() => {
+                  void controller.addHolding();
+                }}
               >
-                Voeg coin toe
+                {t('settings.addHolding')}
               </Button>
             </div>
 
@@ -208,8 +193,8 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
                   </span>
                   <span className="text-[0.78rem] text-fg-muted">{holding.name}</span>
                   <Button
-                    aria-label={`Verwijder ${holding.symbol}`}
-                    className="min-h-9 min-w-9 rounded-full p-0 text-[1.2rem] text-loss focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+                    aria-label={t('settings.removeHolding', { symbol: holding.symbol })}
+                    className="min-h-9 min-w-9 rounded-full p-0 text-[1.2rem] text-loss"
                     onPress={() => controller.removeHolding(holding.id)}
                     variant="secondary"
                   >

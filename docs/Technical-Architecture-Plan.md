@@ -14,15 +14,15 @@ Current MVP:
 - Selectable total and asset rows
 - Recharts-based historical chart
 - Absolute/percentage change toggle
-- ETH staking rewards
-- Local mock data through a typed data-source boundary
-- IndexedDB repository scaffold for future local settings
+- ETH staking rewards (demo value; real staking data is still future work)
+- A typed `PortfolioDataSource` boundary with two implementations: a read-only mock
+  snapshot, and a configured online snapshot built from CoinGecko data
+- Settings for person name, fiat currency, and coin holdings, persisted locally in
+  IndexedDB (`settings` and `market-data` live inside the `portfolio` slice — see ADR-0005)
 
 Planned future slices:
 
-- `settings`: people, assets, amounts, validator pubkeys/indices
 - `secure-storage`: encrypted local config, PIN unlock, import/export
-- `market-data`: CoinGecko price and history adapters
 - `staking-data`: Ethereum validator/rewards adapters
 
 ## Stack
@@ -55,21 +55,25 @@ types. Cross-feature sharing belongs in `shared`.
 
 ## Data And Privacy
 
-The MVP uses `read-only-mock` data. Future online providers are selected but inactive:
+The MVP defaults to `read-only-mock` data and switches to `online` mode once a person
+configures holdings in Settings:
 
-- CoinGecko for spot and historical crypto prices
-- Ethereum Beacon/validator APIs for staking rewards
+- CoinGecko is called directly from the client for spot and historical crypto prices
+  (search, simple price, market chart), validated with Zod and cached in IndexedDB
+  (see ADR-0005).
+- Ethereum Beacon/validator APIs for staking rewards remain future work.
 
-Portfolio configuration should live in IndexedDB. Secure mode should store one encrypted
-JSON document using PBKDF2 for key derivation and AES-GCM for encryption. PINs and keys
-must not be stored.
+Portfolio configuration (person name, fiat currency, holdings) lives in IndexedDB through
+`portfolioConfigRepository.ts`. Secure mode should store one encrypted JSON document using
+PBKDF2 for key derivation and AES-GCM for encryption. PINs and keys must not be stored.
 
 ## Performance
 
 Dibs targets mobile/PWA performance budgets. Current bundle budgets are enforced by
 `scripts/check-bundle-budget.mjs`:
 
-- Total JS gzip < 300 KB
+- Total JS gzip < 320 KB (raised from 310 KB in ADR-0005 for the react-hook-form settings
+  form)
 - CSS gzip < 50 KB
 - Largest JS chunk gzip < 200 KB
 
@@ -85,3 +89,5 @@ Recharts is isolated in a `charts` manual chunk and documented in ADR-0002.
 
 - ADR-0001 is superseded by ADR-0003 for the Dibs baseline.
 - ADR-0002 records the approved Recharts dependency and bundle impact.
+- ADR-0004 records the move to React Aria Components for UI primitives.
+- ADR-0005 records the online CoinGecko data path and local IndexedDB persistence.

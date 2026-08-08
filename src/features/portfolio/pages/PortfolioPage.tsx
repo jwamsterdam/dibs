@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from 'react-aria-components/Button';
+import { Button } from '@/shared/components/Button/Button';
 import { usePortfolioController } from '../hooks/usePortfolioController';
 import { AssetList } from '../components/AssetList';
 import { PeriodTabs } from '../components/PeriodTabs';
@@ -79,16 +79,21 @@ export function PortfolioPage(): React.JSX.Element {
           </h1>
           <Button
             aria-label={t('aria.settings')}
-            className="grid min-h-9 min-w-9 place-items-center rounded-full text-[1.35rem] font-light leading-none text-fg-primary transition-colors hover:bg-bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            className="min-h-9 min-w-9 rounded-full p-0 text-[1.35rem] font-light leading-none"
             onPress={controller.openSettings}
-            type="button"
+            variant="ghost"
           >
-            {'\u2699\uFE0E'}
+            {'⚙︎'}
           </Button>
         </header>
+        {controller.isOnlineError ? (
+          <p className="pb-3 text-[0.78rem] text-loss" role="status">
+            {t('status.onlineError')}
+          </p>
+        ) : null}
         <PeriodTabs
           ariaLabel={t('aria.periodNavigation')}
-          onSelectPeriod={controller.selectPeriod}
+          onSelectPeriod={controller.selectPeriodByKey}
           periods={controller.periods}
           selectedPeriod={controller.selectedPeriod}
         />
@@ -106,6 +111,7 @@ export function PortfolioPage(): React.JSX.Element {
         <div className="flex min-h-[3.1rem] flex-1" />
         <PortfolioChart
           ariaLabel={t('aria.chart', { asset: controller.selectedLabel })}
+          currencyCode={controller.fiatCurrency}
           points={chartPoints}
         />
         <RewardsRow

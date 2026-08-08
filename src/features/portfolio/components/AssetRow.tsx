@@ -1,4 +1,5 @@
 import { Button } from 'react-aria-components/Button';
+import { focusRingClassName } from '@/shared/lib/cn';
 import type { ChangeDisplayMode } from '../types/portfolio';
 
 type AssetRowProps = {
@@ -34,7 +35,9 @@ export function AssetRow({
   const displayedChange = changeDisplayMode === 'absolute' ? absoluteChange : percentageChange;
   const indicatorClassName = isSelected ? 'opacity-100' : 'opacity-0';
   const rowWeightClassName = isTotal ? 'font-bold' : 'font-normal';
-  const dividerClassName = isTotal ? 'border-[var(--color-border-strong)]' : 'border-[var(--color-border-subtle)]';
+  const dividerClassName = isTotal
+    ? 'border-[var(--color-border-strong)]'
+    : 'border-[var(--color-border-subtle)]';
 
   return (
     <li
@@ -42,7 +45,7 @@ export function AssetRow({
     >
       <Button
         aria-label={selectLabel}
-        className="col-span-3 grid min-h-[3.15rem] grid-cols-subgrid items-center rounded-sm text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+        className={`col-span-3 grid min-h-[3.15rem] grid-cols-subgrid items-center rounded-sm text-left ${focusRingClassName}`}
         onPress={onSelect}
         type="button"
         {...(isSelected ? { 'aria-current': 'true' as const } : {})}
@@ -64,7 +67,7 @@ export function AssetRow({
       </Button>
       <Button
         aria-label={toggleChangeLabel}
-        className={`relative z-20 min-h-11 justify-self-end text-right text-[0.98rem] tabular-nums leading-none ${changeClassName} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary`}
+        className={`relative z-20 min-h-11 justify-self-end text-right text-[0.98rem] tabular-nums leading-none ${changeClassName} ${focusRingClassName}`}
         onPress={onToggleChangeDisplayMode}
         type="button"
       >

@@ -10,14 +10,19 @@ import {
 
 describe('PortfolioChart', () => {
   it('renders an empty chart region without failing', () => {
-    renderWithProviders(<PortfolioChart ariaLabel="BTC chart" points={[]} />);
+    renderWithProviders(<PortfolioChart ariaLabel="BTC chart" currencyCode="EUR" points={[]} />);
 
     expect(screen.getByRole('region', { name: 'BTC chart' })).toBeInTheDocument();
   });
 
   it('formats compact and small currency axis labels', () => {
-    expect(formatAxisCurrency(400_000)).toBe('€400K');
-    expect(formatAxisCurrency(900)).toBe('€900');
+    expect(formatAxisCurrency(400_000, 'EUR')).toBe('€400K');
+    expect(formatAxisCurrency(900, 'EUR')).toBe('€900');
+  });
+
+  it('formats axis labels using the configured fiat currency', () => {
+    expect(formatAxisCurrency(400_000, 'USD')).toBe('$400K');
+    expect(formatAxisCurrency(400_000, 'GBP')).toBe('£400K');
   });
   it('reduces timeline ticks to first, middle, and last labels', () => {
     expect(
