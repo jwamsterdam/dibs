@@ -59,6 +59,7 @@ export function usePortfolioController(): PortfolioController {
   const [changeDisplayMode, setChangeDisplayMode] = useAtom(changeDisplayModeAtom);
   const person = mockPortfolioSnapshot.people[0];
 
+  /* istanbul ignore next -- The Zod-validated mock snapshot always contains one person. */
   if (!person) {
     throw new Error('Portfolio requires at least one person');
   }
@@ -67,6 +68,7 @@ export function usePortfolioController(): PortfolioController {
   const assets = useMemo(() => [buildTotalAsset(person.assets), ...person.assets], [person.assets]);
   const selectedAsset = assets.find((asset) => asset.id === selectedAssetId) ?? assets[0];
 
+  /* istanbul ignore next -- The total row guarantees at least one selectable asset. */
   if (!selectedAsset) {
     throw new Error('Portfolio requires at least one asset');
   }

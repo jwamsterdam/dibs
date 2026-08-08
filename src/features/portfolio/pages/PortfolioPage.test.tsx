@@ -1,9 +1,14 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/shared/test/renderWithProviders';
+import { loadNamespace } from '@/shared/i18n';
 import { PortfolioPage } from './PortfolioPage';
 
 describe('PortfolioPage', () => {
+  beforeAll(async () => {
+    await loadNamespace('portfolio');
+  });
+
   it('renders the read-only portfolio without asset chevrons', () => {
     renderWithProviders(<PortfolioPage />);
 
@@ -11,7 +16,7 @@ describe('PortfolioPage', () => {
     expect(screen.getByRole('button', { name: 'Select Totaal' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Select BTC' })).toBeInTheDocument();
     expect(screen.queryByText('›')).not.toBeInTheDocument();
-    expect(screen.getByText('ETH (0x02) available rewards')).toBeInTheDocument();
+    expect(screen.getByText('ETH staking rewards')).toBeInTheDocument();
   });
 
   it('switches the chart selection from total to BTC', async () => {

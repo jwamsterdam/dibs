@@ -10,7 +10,7 @@ Code is read far more than it is written — especially by AI agents that must e
 
 ## Naming
 
-- Names reveal intent: `deviceCount`, not `n`; `isConnected`, not `flag`.
+- Names reveal intent: `assetCount`, not `n`; `isConnected`, not `flag`.
 - Booleans read as predicates: `isLoading`, `hasError`, `canEdit`.
 - Functions are verbs (`fetchZones`, `mapDeviceToRow`); components and types are nouns.
 - No abbreviations beyond well-known ones (`id`, `url`, `api`). No Hungarian notation.

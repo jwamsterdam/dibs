@@ -1,4 +1,3 @@
-import type { PricePoint } from '../types/portfolio';
 import {
   Area,
   AreaChart,
@@ -9,25 +8,15 @@ import {
 
 type PortfolioChartProps = {
   readonly ariaLabel: string;
-  readonly title: string;
-  readonly points: readonly PricePoint[];
+  readonly points: readonly ChartPoint[];
 };
 
-type ChartPoint = {
+export type ChartPoint = {
   readonly label: string;
   readonly value: number;
 };
 
-const fallbackLabels = ['15 apr', '30 apr', '15 mei', '30 mei', '15 jun', '30 jun', '15 jul'];
-
-function toChartPoints(points: readonly PricePoint[]): readonly ChartPoint[] {
-  return points.map((point, index) => ({
-    label: fallbackLabels[index] ?? point.timestamp,
-    value: point.value,
-  }));
-}
-
-function formatAxisCurrency(value: number): string {
+export function formatAxisCurrency(value: number): string {
   if (Math.abs(value) >= 1_000) {
     return `€${Math.round(value / 1_000)}K`;
   }
@@ -35,12 +24,10 @@ function formatAxisCurrency(value: number): string {
 }
 
 export function PortfolioChart({ ariaLabel, points }: PortfolioChartProps): React.JSX.Element {
-  const chartPoints = toChartPoints(points);
-
   return (
     <section aria-label={ariaLabel} className="h-[19rem] pt-8">
       <AreaChart
-        data={chartPoints}
+        data={points}
         margin={{ bottom: 8, left: 0, right: 0, top: 8 }}
         responsive
         role="img"

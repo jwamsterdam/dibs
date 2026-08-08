@@ -47,6 +47,6 @@ Owned by **Pixel**; followed by everyone building UI. Extends [`AGENTS.md`](../.
   `react-i18next`'s `useTranslation`.
 - One namespace **per feature** (`common` for shared); lazy-loaded, so startup stays light on the
   embedded target.
-- Keys are structured and meaningful: `t('zones.editor.saveError')`, not `t('error1')`.
+- Keys are structured and meaningful: `t('portfolio.aria.selectAsset')`, not `t('error1')`.
 - Translation keys are **type-safe** (i18next augmentation): a missing or misspelled key is a
   compile error. The customer supplies the translated text; we own the key structure.

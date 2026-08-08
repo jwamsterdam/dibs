@@ -13,7 +13,7 @@ them. Extends [`AGENTS.md`](../../AGENTS.md) and expands the plan's [§4](../Tec
   (query keys, select, enabled) — not a second data layer.
 
 ```ts
-// features/zones/api/useZones.ts
+// features/market-data/api/usePrices.ts
 export function useZones() {
   return useGetZonesQuery(undefined, { staleTime: 30_000 });
 }

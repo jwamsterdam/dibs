@@ -1,6 +1,5 @@
 import '@testing-library/jest-dom';
 import { toHaveNoViolations } from 'jest-axe';
-import { resetZones } from '@/shared/lib/msw/handlers';
 import { server } from '@/shared/lib/msw/server';
 
 expect.extend(toHaveNoViolations);
@@ -18,6 +17,5 @@ globalThis.ResizeObserver = ResizeObserverMock;
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => {
   server.resetHandlers();
-  resetZones();
 });
 afterAll(() => server.close());

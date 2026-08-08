@@ -6,7 +6,10 @@
     "toggleChange": "Wissel verandering voor {{asset}}",
     "chart": "{{asset}} grafiek"
   },
+  "chart": {
+    "fallbackLabels": ["15 apr", "30 apr", "15 mei", "30 mei", "15 jun", "30 jun", "15 jul"]
+  },
   "rewards": {
-    "ethereum02Available": "ETH (0x02) available rewards"
+    "ethStakingRewards": "ETH staking rewards"
   }
 }

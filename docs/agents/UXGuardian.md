@@ -48,7 +48,7 @@ Guarantee visual and interaction fidelity to the approved Figma designs, correct
 
 ## 7. Example prompts
 
-- "Compare the Dashboard PR against Figma frame <link>. List spacing/token deviations and missing states."
+- "Compare the portfolio screen PR against Figma frame <link>. List spacing/token deviations and missing states."
 - "Audit `<CallDefinitionForm>` for WCAG: contrast, focus order, and keyboard operation."
 - "Verify the `<StatusBadge>` Storybook story covers all variants shown in the design system."
 

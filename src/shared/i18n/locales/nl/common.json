@@ -1,8 +1,5 @@
 {
   "app": {
     "title": "Dibs"
-  },
-  "nav": {
-    "dashboard": "Dashboard"
   }
 }

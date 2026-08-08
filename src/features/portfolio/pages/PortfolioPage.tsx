@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { usePortfolioController } from '../hooks/usePortfolioController';
 import { AssetList } from '../components/AssetList';
 import { PeriodTabs } from '../components/PeriodTabs';
-import { PortfolioChart } from '../components/PortfolioChart';
+import { type ChartPoint, PortfolioChart } from '../components/PortfolioChart';
 import { RewardsRow } from '../components/RewardsRow';
+import type { PricePoint } from '../types/portfolio';
 
 function useFormatters(): {
   readonly formatCurrency: (value: number) => string;
@@ -40,10 +41,22 @@ function useFormatters(): {
   }, []);
 }
 
+function toChartPoints(
+  points: readonly PricePoint[],
+  fallbackLabels: readonly string[],
+): readonly ChartPoint[] {
+  return points.map((point, index) => ({
+    label: fallbackLabels[index] ?? point.timestamp,
+    value: point.value,
+  }));
+}
+
 export function PortfolioPage(): React.JSX.Element {
   const controller = usePortfolioController();
   const { t } = useTranslation('portfolio');
   const { formatCurrency, formatChange, formatPercent } = useFormatters();
+  const fallbackChartLabels = t('chart.fallbackLabels', { returnObjects: true });
+  const chartPoints = toChartPoints(controller.chartPoints, fallbackChartLabels);
 
   return (
     <main className="min-h-[100svh] bg-bg-primary px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1.25rem+env(safe-area-inset-top))] text-fg-primary">
@@ -81,11 +94,10 @@ export function PortfolioPage(): React.JSX.Element {
         <div className="flex min-h-8 flex-1" />
         <PortfolioChart
           ariaLabel={t('aria.chart', { asset: controller.selectedLabel })}
-          points={controller.chartPoints}
-          title={controller.selectedLabel}
+          points={chartPoints}
         />
         <RewardsRow
-          label={t('rewards.ethereum02Available')}
+          label={t('rewards.ethStakingRewards')}
           value={formatCurrency(controller.rewardValue)}
         />
       </div>

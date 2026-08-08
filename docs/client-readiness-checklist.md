@@ -1,53 +1,26 @@
-# Client Readiness Checklist
+# Dibs Readiness Checklist
 
-This repo is currently a pre-sale blueprint. It should demonstrate architecture, tooling and
-delivery discipline without guessing about client-owned systems. Use this checklist at kickoff
-to turn placeholders into real implementation work.
+## Product Inputs
 
-## Contract / Access
+- [ ] Confirm the MVP portfolio assets and example people.
+- [ ] Confirm whether Dibs remains read-only for the next iteration.
+- [ ] Confirm future settings scope: people, assets, amounts, validator pubkeys/indices.
+- [ ] Confirm secure-mode requirements: PIN policy, export/import, recovery expectations.
 
-- [ ] Confirm client repository location, branching rules and review responsibilities.
-- [ ] Confirm who owns GitHub administration, branch protection and required checks.
-- [ ] Confirm whether SonarCloud, Dependabot, Snyk or another security platform is mandated.
-- [ ] Confirm whether CI may call external services such as npm audit and SonarCloud.
+## Data Inputs
 
-## API Contracts
+- [ ] Confirm CoinGecko as the default future price provider.
+- [ ] Confirm Ethereum staking data source and validator identifier format.
+- [ ] Define fallback behavior for offline and failed data refreshes.
 
-- [ ] Provide REST `openapi.yaml` and confirm versioning/change-notification process.
-- [ ] Provide WebSocket `asyncapi.yaml` and event lifecycle expectations.
-- [ ] Confirm whether generated API clients are committed or generated during CI.
-- [ ] Confirm authentication/session model, including cookie names, refresh flow and logout semantics.
-- [ ] Confirm error envelope formats, validation error formats and retry expectations.
-- [ ] Confirm mock-data ownership: supplier-maintained MSW fixtures or client-provided contract examples.
+## Design Inputs
 
-## Design / UX
+- [ ] Keep the Figma reference link current.
+- [ ] Capture mobile viewport expectations around 390 x 844.
+- [ ] Record design decisions for settings and secure mode before implementation.
 
-- [ ] Provide Figma access for all agreed screens, components and responsive variants.
-- [ ] Confirm Untitled UI licence/registry access and whether it can be bundled in the delivered product.
-- [ ] Confirm required themes, accessibility target and high-contrast behaviour.
-- [ ] Confirm loading, empty, error and permission states for each workflow.
-- [ ] Confirm translation ownership and supported locale list.
+## Delivery Inputs
 
-## Embedded Target
-
-- [ ] Provide target browser/runtime details for the embedded Linux platform.
-- [ ] Provide CPU/RAM/storage constraints and representative test hardware or emulator settings.
-- [ ] Confirm nginx/static-serving ownership and required cache/CSP/security headers.
-- [ ] Confirm offline, reconnect and slow-network expectations.
-- [ ] Confirm production logging/telemetry endpoint for UI errors.
-
-## Delivery Gates
-
-- [ ] Replace placeholder CODEOWNERS with real GitHub users or teams.
-- [ ] Enable branch protection and required status checks.
-- [ ] Add SonarCloud Quality Gate once the project and `SONAR_TOKEN` exist.
-- [ ] Add Cypress E2E workflow once workflows and test data are agreed.
-- [ ] Add Lighthouse CI only after dependency approval and target-like throttling settings are known.
-- [ ] Record approved bundle/performance budgets after measurement on representative hardware.
-
-## Deferred Until Inputs Arrive
-
-- REST codegen activation is deferred until OpenAPI is available.
-- WebSocket infrastructure is deferred until AsyncAPI events and reconnect rules are available.
-- Deep Untitled UI integration is deferred until licence and Figma access are confirmed.
-- Hardware performance baselines are deferred until target constraints or devices are available.
+- [ ] Keep branch protection, CI, lint, type-check, test, build, and bundle-budget gates active.
+- [ ] Confirm mobile/PWA hosting target and cache strategy before release.
+- [ ] Re-run dependency approval when adding or removing runtime dependencies.

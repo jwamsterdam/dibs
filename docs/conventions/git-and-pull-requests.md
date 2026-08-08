@@ -6,14 +6,14 @@ How change flows into `main`. Extends [`AGENTS.md`](../../AGENTS.md).
 
 - Format: `type(scope): subject` — enforced by commitlint on `commit-msg`.
 - Types: `feat`, `fix`, `chore`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `revert`.
-- Scope is the feature or area: `feat(zones): add assignment matrix`.
+- Scope is the feature or area: `feat(portfolio): add period selection`.
 - Subject is imperative and lower-case, no trailing period: "add", not "added"/"adds".
 - The pre-commit hook runs `lint-staged` (eslint --fix → prettier → `tsc --noEmit`); a commit
   that fails type-check or lint does not land.
 
 ## Branches
 
-- Branch from `main`: `type/scope-short-description` (e.g. `feat/zones-matrix`, `fix/login-401`).
+- Branch from `main`: `type/scope-short-description` (e.g. `feat/settings-assets`, `fix/portfolio-change-toggle`).
 - Keep branches short-lived; rebase or merge `main` frequently to avoid drift.
 
 ## Pull requests

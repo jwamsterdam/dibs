@@ -6,7 +6,10 @@
     "toggleChange": "Toggle change for {{asset}}",
     "chart": "{{asset}} chart"
   },
+  "chart": {
+    "fallbackLabels": ["15 Apr", "30 Apr", "15 May", "30 May", "15 Jun", "30 Jun", "15 Jul"]
+  },
   "rewards": {
-    "ethereum02Available": "ETH (0x02) available rewards"
+    "ethStakingRewards": "ETH staking rewards"
   }
 }
