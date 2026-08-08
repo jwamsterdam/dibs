@@ -16,8 +16,11 @@ export default {
         },
         fg: {
           primary: 'var(--color-fg-primary)',
+          muted: 'var(--color-fg-muted)',
           'on-brand': 'var(--color-fg-on-brand)',
         },
+        gain: 'var(--color-gain)',
+        loss: 'var(--color-loss)',
       },
     },
   },

@@ -1,0 +1,45 @@
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="390" height="844" fill="#FDFDFB"/>
+  <text x="195" y="52" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="600" fill="#111111">Jan</text>
+  <text x="32" y="91" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#007AFF">1D</text>
+  <text x="82" y="91" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="600" fill="#6E6E73">1W</text>
+  <text x="132" y="91" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="600" fill="#6E6E73">1M</text>
+  <text x="182" y="91" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="600" fill="#6E6E73">YTD</text>
+  <text x="246" y="91" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="600" fill="#6E6E73">1Y</text>
+  <text x="305" y="91" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="600" fill="#6E6E73">ALL</text>
+  <line x1="24" y1="116" x2="366" y2="116" stroke="#111111" stroke-width="1.5"/>
+
+  <rect x="24" y="135" width="3" height="34" rx="1.5" fill="#007AFF"/>
+  <text x="38" y="157" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#111111">Totaal</text>
+  <text x="238" y="157" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#111111">€352.946</text>
+  <text x="354" y="157" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="600" fill="#1B8F4D">+€4.218</text>
+
+  <line x1="24" y1="184" x2="366" y2="184" stroke="#D9D9DD" stroke-width="0.75"/>
+  <text x="38" y="215" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="600" fill="#111111">BTC</text>
+  <text x="238" y="215" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="500" fill="#111111">€26.896</text>
+  <text x="354" y="215" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="600" fill="#1B8F4D">+€1.125</text>
+
+  <text x="38" y="260" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="600" fill="#111111">ETH</text>
+  <text x="238" y="260" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="500" fill="#111111">€14.712</text>
+  <text x="354" y="260" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="600" fill="#C73E3A">-€382</text>
+
+  <text x="38" y="305" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="600" fill="#111111">USDC</text>
+  <text x="238" y="305" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="500" fill="#111111">€12.500</text>
+  <text x="354" y="305" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="600" fill="#6E6E73">€0</text>
+
+  <text x="38" y="350" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="600" fill="#111111">ETH staking</text>
+  <text x="238" y="350" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="500" fill="#111111">€261.487</text>
+  <text x="354" y="350" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="600" fill="#1B8F4D">+€3.475</text>
+
+  <line x1="24" y1="385" x2="366" y2="385" stroke="#BFC0C4" stroke-width="0.85"/>
+  <text x="24" y="433" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#111111">Totaal</text>
+
+  <path d="M28 553 C52 541, 62 527, 82 535 C104 543, 113 497, 137 509 C160 520, 170 473, 196 481 C222 489, 229 439, 254 449 C280 459, 292 419, 319 431 C341 441, 351 401, 363 392" stroke="#007AFF" stroke-width="2.25" stroke-linecap="round"/>
+  <path d="M28 553 C52 541, 62 527, 82 535 C104 543, 113 497, 137 509 C160 520, 170 473, 196 481 C222 489, 229 439, 254 449 C280 459, 292 419, 319 431 C341 441, 351 401, 363 392" stroke="#007AFF" stroke-opacity="0.12" stroke-width="7" stroke-linecap="round"/>
+
+  <line x1="24" y1="635" x2="366" y2="635" stroke="#D9D9DD" stroke-width="0.75"/>
+  <text x="24" y="681" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="600" fill="#111111">ETH staking rewards</text>
+  <text x="366" y="681" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="600" fill="#111111">€18.420</text>
+
+  <text x="195" y="801" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="500" fill="#9A9AA0">Gereconstrueerde referentie op basis van laatste UI-feedback</text>
+</svg>

@@ -4,5 +4,10 @@
   --color-bg-primary: #ffffff;
   --color-bg-secondary: #f3f4f6;
   --color-fg-primary: #111827;
+  --color-fg-muted: #6b7280;
   --color-fg-on-brand: #ffffff;
+  --color-border-subtle: #e5e7eb;
+  --color-border-strong: #d1d5db;
+  --color-gain: #047857;
+  --color-loss: #b91c1c;
 }

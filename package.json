@@ -1,9 +1,9 @@
 {
-  "name": "configuration-tool-frontend",
+  "name": "dibs",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Enterprise-grade React 19 front-end for a hardware configuration tool.",
+  "description": "Privacy-friendly React PWA for viewing a local crypto portfolio.",
   "engines": {
     "node": ">=20"
   },

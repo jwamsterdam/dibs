@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { createRootRoute, createRoute, createRouter, Outlet } from '@tanstack/react-router';
-import { DashboardPage } from '@/features/dashboard';
+import { PortfolioPage } from '@/features/portfolio';
 
 // Route-based code splitting: the zones feature loads as its own chunk on demand.
 const ZonesPage = lazy(() => import('@/features/zones').then((m) => ({ default: m.ZonesPage })));
@@ -12,7 +12,7 @@ const rootRoute = createRootRoute({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  component: DashboardPage,
+  component: PortfolioPage,
 });
 
 const zonesRoute = createRoute({
