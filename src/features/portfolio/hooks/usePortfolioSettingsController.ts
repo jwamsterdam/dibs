@@ -113,7 +113,6 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
       indexedDbPortfolioConfigRepository.saveSettings(nextSettings),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['portfolio-settings'] });
-      await queryClient.invalidateQueries({ queryKey: ['portfolio-snapshot'] });
     },
   });
 

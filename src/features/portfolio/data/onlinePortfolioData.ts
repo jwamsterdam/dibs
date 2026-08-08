@@ -12,11 +12,7 @@ import type {
   PortfolioSettingsConfig,
 } from '../types/settings';
 import { portfolioSnapshotSchema } from '../validation/portfolio.schema';
-import {
-  getCoinGeckoMarketChart,
-  getCoinGeckoPrices,
-  type CoinGeckoChartPoint,
-} from './coingeckoClient';
+import { getCoinGeckoMarketChart, type CoinGeckoChartPoint } from './coingeckoClient';
 
 const sampleCount = 7;
 
@@ -164,10 +160,6 @@ export async function buildOnlinePortfolioSnapshot(
   activePeriod: PortfolioPeriod,
   now = new Date(),
 ): Promise<PortfolioSnapshot> {
-  const prices = await getCoinGeckoPrices(
-    settings.holdings.map((holding) => holding.coinGeckoId),
-    settings.fiatCurrency,
-  );
   const holdingSeries = await Promise.all(
     settings.holdings.map((holding) =>
       buildHoldingSeries(holding, settings.fiatCurrency, activePeriod, now),
@@ -184,7 +176,7 @@ export async function buildOnlinePortfolioSnapshot(
     id: holding.id,
     label: holding.symbol,
     symbol: holding.symbol,
-    amount: (prices.get(holding.coinGeckoId) ?? 0) * holding.amount,
+    amount: holding.amount,
     kind: 'crypto',
   }));
 

@@ -12,6 +12,7 @@ import type { PortfolioFiatCurrencyCode, PortfolioPeriod, PricePoint } from '../
 type ChartLabelsByPeriod = Record<PortfolioPeriod, readonly string[]>;
 
 function useFormatters(): {
+  readonly formatAmount: (value: number) => string;
   readonly formatCurrency: (value: number, currency: PortfolioFiatCurrencyCode) => string;
   readonly formatChange: (value: number, currency: PortfolioFiatCurrencyCode) => string;
   readonly formatPercent: (value: number) => string;
@@ -22,8 +23,10 @@ function useFormatters(): {
       signDisplay: 'exceptZero',
       style: 'percent',
     });
+    const amountFormatter = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 8 });
 
     return {
+      formatAmount: (value) => amountFormatter.format(value),
       formatCurrency: (value, currency) =>
         new Intl.NumberFormat('nl-NL', {
           currency,
@@ -62,7 +65,7 @@ export function toChartPoints(
 export function PortfolioPage(): React.JSX.Element {
   const controller = usePortfolioController();
   const { t } = useTranslation('portfolio');
-  const { formatCurrency, formatChange, formatPercent } = useFormatters();
+  const { formatAmount, formatCurrency, formatChange, formatPercent } = useFormatters();
   const chartLabelsByPeriod = t('chart.labels', { returnObjects: true }) as ChartLabelsByPeriod;
   const chartPoints = toChartPoints(
     controller.chartPoints,
@@ -99,6 +102,7 @@ export function PortfolioPage(): React.JSX.Element {
         />
         <AssetList
           changeDisplayMode={controller.changeDisplayMode}
+          formatAmount={formatAmount}
           formatChange={(value) => formatChange(value, controller.fiatCurrency)}
           formatCurrency={(value) => formatCurrency(value, controller.fiatCurrency)}
           formatPercent={formatPercent}

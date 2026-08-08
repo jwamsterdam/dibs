@@ -7,6 +7,7 @@ describe('AssetRow', () => {
     render(
       <AssetRow
         absoluteChange="+EUR 120"
+        amount="0,42"
         changeDisplayMode="absolute"
         changeValue={120}
         isSelected={false}
@@ -22,6 +23,29 @@ describe('AssetRow', () => {
     );
 
     expect(screen.getByText('BTC')).toHaveClass('justify-self-start', 'text-left');
+    expect(screen.getByText('0,42')).toBeInTheDocument();
+  });
+
+  it('renders without an amount for the total row', () => {
+    render(
+      <AssetRow
+        absoluteChange="+EUR 120"
+        amount=""
+        changeDisplayMode="absolute"
+        changeValue={120}
+        isSelected={false}
+        isTotal
+        label="Totaal"
+        onSelect={jest.fn()}
+        onToggleChangeDisplayMode={jest.fn()}
+        percentageChange="+1.2%"
+        selectLabel="Select Totaal"
+        toggleChangeLabel="Toggle change for Totaal"
+        value="EUR 50.000"
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Select Totaal' })).toHaveTextContent('Totaal');
   });
 
   it('keeps selection and change toggles as separate controls', async () => {
@@ -32,6 +56,7 @@ describe('AssetRow', () => {
     render(
       <AssetRow
         absoluteChange="+EUR 120"
+        amount="0,42"
         changeDisplayMode="absolute"
         changeValue={120}
         isSelected

@@ -10,3 +10,7 @@ export function cn(...classes: ClassValue[]): string {
 
 export const focusRingClassName =
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary';
+
+/** Same ring as {@link focusRingClassName}, for wrapper elements whose focusable child is nested. */
+export const focusWithinRingClassName =
+  'focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-brand-primary';

@@ -21,12 +21,14 @@ import {
 } from 'react-aria-components/Select';
 import { Input, Label, TextField } from 'react-aria-components/TextField';
 import { Button } from '@/shared/components/Button/Button';
-import { focusRingClassName } from '@/shared/lib/cn';
+import { focusRingClassName, focusWithinRingClassName } from '@/shared/lib/cn';
 import { usePortfolioSettingsController } from '../hooks/usePortfolioSettingsController';
 
 type SettingsPanelProps = {
   readonly onClose: () => void;
 };
+
+const fieldRadiusClassName = 'rounded-[0.85rem]';
 
 export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Element {
   const controller = usePortfolioSettingsController();
@@ -71,6 +73,37 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
           ) : null}
 
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-4">
+            <Select
+              className="grid gap-2 border-b border-[var(--color-border-strong)] pb-4 text-[0.82rem] font-medium text-fg-muted"
+              onSelectionChange={controller.selectCurrencyByKey}
+              selectedKey={controller.settings.fiatCurrency}
+            >
+              <SelectLabel>{t('settings.currency')}</SelectLabel>
+              <SelectButton
+                className={`grid h-11 w-full grid-cols-[1fr_auto] items-center ${fieldRadiusClassName} border border-[var(--color-border-subtle)] bg-bg-primary px-3 text-left text-[1rem] font-normal uppercase text-fg-primary outline-none ${focusRingClassName}`}
+              >
+                <SelectValue />
+                <span
+                  aria-hidden="true"
+                  className="mb-1 h-2 w-2 rotate-45 border-b-2 border-r-2 border-fg-muted"
+                />
+              </SelectButton>
+              <Popover className="w-[var(--trigger-width)] overflow-hidden rounded-[0.75rem] border border-[var(--color-border-subtle)] bg-bg-primary">
+                <ListBox className="p-1 outline-none">
+                  {controller.currencies.map((currency) => (
+                    <ListBoxItem
+                      className="cursor-default rounded-[0.45rem] px-3 py-2 text-[1rem] font-normal uppercase text-fg-primary outline-none data-[focused]:bg-bg-secondary data-[selected]:font-semibold"
+                      id={currency}
+                      key={currency}
+                      textValue={currency.toUpperCase()}
+                    >
+                      {currency.toUpperCase()}
+                    </ListBoxItem>
+                  ))}
+                </ListBox>
+              </Popover>
+            </Select>
+
             <div className="grid gap-3">
               <ComboBox
                 allowsCustomValue
@@ -82,12 +115,16 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
                 selectedKey={controller.selectedCoin?.id ?? null}
               >
                 <ComboBoxLabel>{t('settings.coin')}</ComboBoxLabel>
-                <div className="grid grid-cols-[minmax(0,1fr)_2.25rem] rounded-[0.85rem] border border-[var(--color-border-subtle)] bg-bg-primary focus-within:border-brand-primary">
+                <div
+                  className={`grid grid-cols-[minmax(0,1fr)_2.25rem] ${fieldRadiusClassName} border border-[var(--color-border-subtle)] bg-bg-primary ${focusWithinRingClassName}`}
+                >
                   <ComboBoxInput
-                    className="h-11 min-w-0 rounded-[0.85rem] bg-bg-primary px-3 text-[1rem] text-fg-primary outline-none placeholder:text-fg-muted"
+                    className={`h-11 min-w-0 ${fieldRadiusClassName} bg-bg-primary px-3 text-[1rem] text-fg-primary outline-none placeholder:text-fg-muted`}
                     placeholder={t('settings.searchPlaceholder')}
                   />
-                  <ComboBoxButton className="grid h-11 place-items-center rounded-[0.85rem] text-fg-muted outline-none">
+                  <ComboBoxButton
+                    className={`grid h-11 place-items-center ${fieldRadiusClassName} text-fg-muted outline-none`}
+                  >
                     <span
                       aria-hidden="true"
                       className="mb-1 h-2 w-2 rotate-45 border-b-2 border-r-2 border-fg-muted"
@@ -115,40 +152,11 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
                 ) : null}
               </ComboBox>
 
-              <Select
-                className="grid gap-2 text-[0.82rem] font-medium text-fg-muted"
-                onSelectionChange={controller.selectCurrencyByKey}
-                selectedKey={controller.settings.fiatCurrency}
-              >
-                <SelectLabel>{t('settings.currency')}</SelectLabel>
-                <SelectButton className="grid h-11 w-full grid-cols-[1fr_auto] items-center rounded-[0.85rem] border border-[var(--color-border-subtle)] bg-bg-primary px-3 text-left text-[1rem] font-normal uppercase text-fg-primary outline-none focus-visible:border-brand-primary">
-                  <SelectValue />
-                  <span
-                    aria-hidden="true"
-                    className="mb-1 h-2 w-2 rotate-45 border-b-2 border-r-2 border-fg-muted"
-                  />
-                </SelectButton>
-                <Popover className="w-[var(--trigger-width)] overflow-hidden rounded-[0.75rem] border border-[var(--color-border-subtle)] bg-bg-primary">
-                  <ListBox className="p-1 outline-none">
-                    {controller.currencies.map((currency) => (
-                      <ListBoxItem
-                        className="cursor-default rounded-[0.45rem] px-3 py-2 text-[1rem] font-normal uppercase text-fg-primary outline-none data-[focused]:bg-bg-secondary data-[selected]:font-semibold"
-                        id={currency}
-                        key={currency}
-                        textValue={currency.toUpperCase()}
-                      >
-                        {currency.toUpperCase()}
-                      </ListBoxItem>
-                    ))}
-                  </ListBox>
-                </Popover>
-              </Select>
-
               <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
                 <TextField className="grid gap-2 text-[0.82rem] font-medium text-fg-muted">
                   <Label>{t('settings.amount')}</Label>
                   <Input
-                    className={`h-11 w-full min-w-0 rounded-[0.65rem] border border-[var(--color-border-subtle)] bg-bg-primary px-3 text-[1rem] text-fg-primary ${focusRingClassName}`}
+                    className={`h-11 w-full min-w-0 ${fieldRadiusClassName} border border-[var(--color-border-subtle)] bg-bg-primary px-3 text-[1rem] text-fg-primary ${focusRingClassName}`}
                     inputMode="decimal"
                     onChange={(event) => controller.setAmount(event.target.value)}
                     placeholder="0,00"
@@ -158,7 +166,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
                 <TextField className="grid gap-2 text-[0.82rem] font-medium text-fg-muted">
                   <Label>{t('settings.purchasedAt')}</Label>
                   <Input
-                    className={`h-11 w-full min-w-0 rounded-[0.65rem] border border-[var(--color-border-subtle)] bg-bg-primary px-2 text-[0.92rem] text-fg-primary ${focusRingClassName}`}
+                    className={`h-11 w-full min-w-0 ${fieldRadiusClassName} border border-[var(--color-border-subtle)] bg-bg-primary px-2 text-[0.92rem] text-fg-primary ${focusRingClassName}`}
                     onChange={(event) => controller.setPurchasedAt(event.target.value)}
                     type="date"
                     value={controller.purchasedAt}

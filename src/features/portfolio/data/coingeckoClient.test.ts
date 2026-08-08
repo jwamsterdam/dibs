@@ -1,8 +1,4 @@
-import {
-  getCoinGeckoMarketChart,
-  getCoinGeckoPrices,
-  searchCoinGeckoCoins,
-} from './coingeckoClient';
+import { getCoinGeckoMarketChart, searchCoinGeckoCoins } from './coingeckoClient';
 
 describe('coingeckoClient', () => {
   afterEach(() => {
@@ -41,29 +37,6 @@ describe('coingeckoClient', () => {
     await expect(searchCoinGeckoCoins('b')).resolves.toEqual([]);
   });
 
-  it('maps simple prices for the selected fiat currency', async () => {
-    jest.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ bitcoin: { eur: 62_000 }, ethereum: { eur: 2_700 } })),
-    );
-
-    const prices = await getCoinGeckoPrices(['ethereum', 'bitcoin'], 'eur');
-
-    expect(prices.get('bitcoin')).toBe(62_000);
-    expect(prices.get('ethereum')).toBe(2_700);
-  });
-
-  it('returns an empty price map when no ids are requested', async () => {
-    await expect(getCoinGeckoPrices([], 'eur')).resolves.toEqual(new Map());
-  });
-
-  it('falls back to zero when CoinGecko omits a requested price', async () => {
-    jest.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ bitcoin: {} })));
-
-    const prices = await getCoinGeckoPrices(['bitcoin'], 'eur');
-
-    expect(prices.get('bitcoin')).toBe(0);
-  });
-
   it('falls back to common CoinGecko ids when CoinGecko rejects search', async () => {
     jest.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 429 }));
 
@@ -77,12 +50,12 @@ describe('coingeckoClient', () => {
   });
 
   it('maps market chart tuples to typed chart points', async () => {
-    jest.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ prices: [[1_722_000_000_000, 62_000]] })),
-    );
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify({ prices: [[1_722_000_000_000, 62_000]] })));
 
-    await expect(getCoinGeckoMarketChart('bitcoin', 'eur', 1_722_000_000, 1_722_003_600)).resolves.toEqual([
-      { price: 62_000, timestamp: 1_722_000_000_000 },
-    ]);
+    await expect(
+      getCoinGeckoMarketChart('bitcoin', 'eur', 1_722_000_000, 1_722_003_600),
+    ).resolves.toEqual([{ price: 62_000, timestamp: 1_722_000_000_000 }]);
   });
 });

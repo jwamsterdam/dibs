@@ -6,7 +6,6 @@ import { getCachedOrFetch } from './coingeckoCache';
 
 const COINGECKO_BASE_URL = 'https://api.coingecko.com/api/v3';
 const searchCacheTtlMs = 24 * 60 * 60 * 1_000;
-const priceCacheTtlMs = 60 * 1_000;
 const chartCacheTtlMs = 30 * 60 * 1_000;
 
 const fallbackSearchCoins: readonly CoinSearchResult[] = [
@@ -41,15 +40,6 @@ const mappedCoinSearchResponseSchema = coinSearchResponseSchema.transform(
       marketCapRank: coin.market_cap_rank,
       thumb: coin.thumb,
     })),
-);
-
-const simplePriceResponseSchema = z.record(
-  z.object({
-    eur: z.number().optional(),
-    usd: z.number().optional(),
-    gbp: z.number().optional(),
-    chf: z.number().optional(),
-  }),
 );
 
 const marketChartResponseSchema = z.object({
@@ -93,34 +83,6 @@ export async function searchCoinGeckoCoins(query: string): Promise<readonly Coin
   } catch {
     return fallbackResults;
   }
-}
-
-export async function getCoinGeckoPrices(
-  coinIds: readonly string[],
-  currency: PortfolioFiatCurrency,
-): Promise<ReadonlyMap<string, number>> {
-  if (coinIds.length === 0) {
-    return new Map();
-  }
-
-  const ids = Array.from(new Set(coinIds)).sort();
-  const response = await getCachedOrFetch(
-    `prices:${currency}:${ids.join(',')}`,
-    priceCacheTtlMs,
-    simplePriceResponseSchema,
-    () =>
-      apiGet(
-        buildUrl('/simple/price', { ids: ids.join(','), vs_currencies: currency }),
-        simplePriceResponseSchema,
-      ),
-  );
-
-  return new Map(
-    ids.map((id) => {
-      const price = response[id]?.[currency] ?? 0;
-      return [id, price] as const;
-    }),
-  );
 }
 
 export async function getCoinGeckoMarketChart(

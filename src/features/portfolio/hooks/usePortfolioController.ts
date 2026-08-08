@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { useAtom } from 'jotai';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { configuredPortfolioDataSource } from '../data/portfolioDataSource';
+import { indexedDbPortfolioConfigRepository } from '../data/portfolioConfigRepository';
 import { mockPortfolioSnapshot } from '../data/mockPortfolioSnapshot';
 import {
   changeDisplayModeAtom,
@@ -25,6 +26,7 @@ const demoEthStakingRewardsEur = 18_420;
 export type PortfolioRow = {
   readonly id: string;
   readonly label: string;
+  readonly amount: number | null;
   readonly value: number;
   readonly changeValue: number;
   readonly changePercent: number;
@@ -82,9 +84,15 @@ export function usePortfolioController(): PortfolioController {
   const [selectedAssets, setSelectedAssets] = useAtom(selectedAssetByPersonAtom);
   const [changeDisplayMode, setChangeDisplayMode] = useAtom(changeDisplayModeAtom);
   const [isSettingsOpen, setIsSettingsOpen] = useAtom(isSettingsOpenAtom);
+  const settingsQuery = useQuery({
+    queryFn: () => indexedDbPortfolioConfigRepository.loadSettings(),
+    queryKey: ['portfolio-settings'],
+    staleTime: 5_000,
+  });
   const snapshotQuery = useQuery({
+    placeholderData: keepPreviousData,
     queryFn: () => configuredPortfolioDataSource.getSnapshot(selectedPeriod),
-    queryKey: ['portfolio-snapshot', selectedPeriod],
+    queryKey: ['portfolio-snapshot', selectedPeriod, settingsQuery.dataUpdatedAt],
     staleTime: 30_000,
   });
   const snapshot = snapshotQuery.data ?? mockPortfolioSnapshot;
@@ -113,6 +121,7 @@ export function usePortfolioController(): PortfolioController {
     return {
       id: asset.id,
       label: asset.label,
+      amount: asset.kind === 'total' ? null : asset.amount,
       value,
       changeValue,
       changePercent,

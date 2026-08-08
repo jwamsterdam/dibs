@@ -6,6 +6,7 @@ type AssetRowProps = {
   readonly label: string;
   readonly selectLabel: string;
   readonly toggleChangeLabel: string;
+  readonly amount: string;
   readonly value: string;
   readonly absoluteChange: string;
   readonly percentageChange: string;
@@ -21,6 +22,7 @@ export function AssetRow({
   label,
   selectLabel,
   toggleChangeLabel,
+  amount,
   value,
   absoluteChange,
   percentageChange,
@@ -41,11 +43,11 @@ export function AssetRow({
 
   return (
     <li
-      className={`relative grid min-h-[3.15rem] grid-cols-[0.75rem_minmax(6.8rem,1fr)_minmax(5.4rem,auto)_minmax(4.65rem,auto)] items-center gap-2 border-b last:border-b-0 ${dividerClassName}`}
+      className={`relative grid min-h-[3.15rem] grid-cols-[0.75rem_minmax(5rem,1fr)_minmax(2.9rem,auto)_minmax(5.4rem,auto)_minmax(4.65rem,auto)] items-center gap-2 border-b last:border-b-0 ${dividerClassName}`}
     >
       <Button
         aria-label={selectLabel}
-        className={`col-span-3 grid min-h-[3.15rem] grid-cols-subgrid items-center rounded-sm text-left ${focusRingClassName}`}
+        className={`col-span-4 grid min-h-[3.15rem] grid-cols-subgrid items-center rounded-sm text-left ${focusRingClassName}`}
         onPress={onSelect}
         type="button"
         {...(isSelected ? { 'aria-current': 'true' as const } : {})}
@@ -58,6 +60,9 @@ export function AssetRow({
           className={`pointer-events-none min-w-0 justify-self-start truncate text-left text-[0.98rem] leading-none text-fg-primary ${rowWeightClassName}`}
         >
           {label}
+        </span>
+        <span className="pointer-events-none justify-self-end text-right text-[0.86rem] tabular-nums leading-none text-fg-muted">
+          {amount}
         </span>
         <span
           className={`pointer-events-none justify-self-end text-right text-[0.98rem] tabular-nums leading-none text-fg-primary ${rowWeightClassName}`}

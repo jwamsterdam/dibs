@@ -4,6 +4,7 @@ import type { ChangeDisplayMode } from '../types/portfolio';
 
 type AssetListProps = {
   readonly rows: readonly PortfolioRow[];
+  readonly formatAmount: (amount: number) => string;
   readonly formatCurrency: (value: number) => string;
   readonly formatChange: (value: number) => string;
   readonly formatPercent: (value: number) => string;
@@ -16,6 +17,7 @@ type AssetListProps = {
 
 export function AssetList({
   rows,
+  formatAmount,
   formatCurrency,
   formatChange,
   formatPercent,
@@ -30,6 +32,7 @@ export function AssetList({
       {rows.map((row) => (
         <AssetRow
           absoluteChange={formatChange(row.changeValue)}
+          amount={row.amount === null ? '' : formatAmount(row.amount)}
           changeDisplayMode={changeDisplayMode}
           changeValue={row.changeValue}
           isSelected={row.isSelected}
