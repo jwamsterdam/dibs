@@ -5,42 +5,23 @@ import { coinSearchResultSchema } from '../validation/settings.schema';
 import { getCachedOrFetch } from './coingeckoCache';
 
 const COINGECKO_BASE_URL = 'https://api.coingecko.com/api/v3';
-const searchCacheTtlMs = 24 * 60 * 60 * 1_000;
+const topCoinsCacheTtlMs = 7 * 24 * 60 * 60 * 1_000;
 const chartCacheTtlMs = 30 * 60 * 1_000;
+const topCoinsCount = 250;
+const maxAutocompleteResults = 8;
 
 const fallbackSearchCoins: readonly CoinSearchResult[] = [
-  { id: 'bitcoin', marketCapRank: 1, name: 'Bitcoin', symbol: 'BTC', thumb: '' },
-  { id: 'ethereum', marketCapRank: 2, name: 'Ethereum', symbol: 'ETH', thumb: '' },
-  { id: 'solana', marketCapRank: 6, name: 'Solana', symbol: 'SOL', thumb: '' },
-  { id: 'ripple', marketCapRank: 4, name: 'XRP', symbol: 'XRP', thumb: '' },
-  { id: 'cardano', marketCapRank: 10, name: 'Cardano', symbol: 'ADA', thumb: '' },
-  { id: 'polkadot', marketCapRank: 25, name: 'Polkadot', symbol: 'DOT', thumb: '' },
-  { id: 'chainlink', marketCapRank: 15, name: 'Chainlink', symbol: 'LINK', thumb: '' },
-  { id: 'usd-coin', marketCapRank: 7, name: 'USDC', symbol: 'USDC', thumb: '' },
+  { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC' },
+  { id: 'ethereum', name: 'Ethereum', symbol: 'ETH' },
+  { id: 'solana', name: 'Solana', symbol: 'SOL' },
+  { id: 'ripple', name: 'XRP', symbol: 'XRP' },
+  { id: 'cardano', name: 'Cardano', symbol: 'ADA' },
+  { id: 'polkadot', name: 'Polkadot', symbol: 'DOT' },
+  { id: 'chainlink', name: 'Chainlink', symbol: 'LINK' },
+  { id: 'usd-coin', name: 'USDC', symbol: 'USDC' },
 ] as const;
 
-const coinSearchResponseSchema = z.object({
-  coins: z.array(
-    z.object({
-      id: z.string(),
-      name: z.string(),
-      symbol: z.string(),
-      market_cap_rank: z.number().nullable(),
-      thumb: z.string(),
-    }),
-  ),
-});
-
-const mappedCoinSearchResponseSchema = coinSearchResponseSchema.transform(
-  (response): readonly CoinSearchResult[] =>
-    response.coins.map((coin) => ({
-      id: coin.id,
-      name: coin.name,
-      symbol: coin.symbol.toUpperCase(),
-      marketCapRank: coin.market_cap_rank,
-      thumb: coin.thumb,
-    })),
-);
+const topCoinsSchema = z.array(coinSearchResultSchema);
 
 const marketChartResponseSchema = z.object({
   prices: z.array(z.tuple([z.number(), z.number()])),
@@ -57,32 +38,52 @@ function buildUrl(path: string, params: Record<string, string>): string {
   return url.toString();
 }
 
-export async function searchCoinGeckoCoins(query: string): Promise<readonly CoinSearchResult[]> {
+/**
+ * The top {@link topCoinsCount} coins by market cap (id, symbol, name only), downloaded once and
+ * cached for a week. Autocomplete only ever searches this set — long-tail coins outside the top
+ * 250 aren't worth surfacing and would need per-keystroke `/search` calls, which is what was
+ * tripping CoinGecko's rate limit. The response already comes back ordered by market cap, so
+ * that order doubles as the relevance ranking.
+ */
+export async function getCoinGeckoTopCoins(): Promise<readonly CoinSearchResult[]> {
+  try {
+    const coins = await getCachedOrFetch('coins-top-250', topCoinsCacheTtlMs, topCoinsSchema, () =>
+      apiGet(
+        buildUrl('/coins/markets', {
+          order: 'market_cap_desc',
+          per_page: String(topCoinsCount),
+          page: '1',
+          vs_currency: 'usd',
+        }),
+        topCoinsSchema,
+      ),
+    );
+    return coins.map((coin) => ({ ...coin, symbol: coin.symbol.toUpperCase() }));
+  } catch {
+    return fallbackSearchCoins;
+  }
+}
+
+/**
+ * Client-side autocomplete filter over the top-250 list — no network call. The list is already
+ * market-cap ordered, so a plain substring filter is enough to keep the biggest match first.
+ */
+export function filterCoinGeckoCoins(
+  query: string,
+  coins: readonly CoinSearchResult[],
+): readonly CoinSearchResult[] {
   const normalizedQuery = query.trim().toLowerCase();
   if (normalizedQuery.length < 2) {
     return [];
   }
 
-  const fallbackResults = fallbackSearchCoins.filter(
-    (coin) =>
-      coin.name.toLowerCase().includes(normalizedQuery) ||
-      coin.symbol.toLowerCase().includes(normalizedQuery) ||
-      coin.id.includes(normalizedQuery),
-  );
-
-  try {
-    const mappedCoins = await getCachedOrFetch(
-      `search:${normalizedQuery}`,
-      searchCacheTtlMs,
-      z.array(coinSearchResultSchema),
-      () => apiGet(buildUrl('/search', { query: normalizedQuery }), mappedCoinSearchResponseSchema),
-    );
-    const topCoins = mappedCoins.slice(0, 8);
-
-    return topCoins.length > 0 ? topCoins : fallbackResults;
-  } catch {
-    return fallbackResults;
-  }
+  return coins
+    .filter(
+      (coin) =>
+        coin.symbol.toLowerCase().includes(normalizedQuery) ||
+        coin.name.toLowerCase().includes(normalizedQuery),
+    )
+    .slice(0, maxAutocompleteResults);
 }
 
 export async function getCoinGeckoMarketChart(

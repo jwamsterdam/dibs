@@ -4,11 +4,14 @@ import type { ReactElement, ReactNode } from 'react';
 import { createTestQueryClient } from '@/shared/test/renderWithProviders';
 import { usePortfolioSettingsController } from './usePortfolioSettingsController';
 import { indexedDbPortfolioConfigRepository } from '../data/portfolioConfigRepository';
-import { searchCoinGeckoCoins } from '../data/coingeckoClient';
+import { getCoinGeckoTopCoins } from '../data/coingeckoClient';
 import type { PortfolioSettingsConfig } from '../types/settings';
 
 jest.mock('../data/portfolioConfigRepository');
-jest.mock('../data/coingeckoClient');
+jest.mock('../data/coingeckoClient', () => ({
+  ...jest.requireActual('../data/coingeckoClient'),
+  getCoinGeckoTopCoins: jest.fn(),
+}));
 
 const initialSettings: PortfolioSettingsConfig = {
   personName: 'JW',
@@ -18,10 +21,8 @@ const initialSettings: PortfolioSettingsConfig = {
 
 const bitcoinResult = {
   id: 'bitcoin',
-  marketCapRank: 1,
   name: 'Bitcoin',
   symbol: 'BTC',
-  thumb: '',
 };
 
 function wrapper({ children }: { children: ReactNode }): ReactElement {
@@ -36,7 +37,7 @@ describe('usePortfolioSettingsController', () => {
   beforeEach(() => {
     jest.mocked(indexedDbPortfolioConfigRepository.loadSettings).mockResolvedValue(initialSettings);
     jest.mocked(indexedDbPortfolioConfigRepository.saveSettings).mockResolvedValue(undefined);
-    jest.mocked(searchCoinGeckoCoins).mockResolvedValue([bitcoinResult]);
+    jest.mocked(getCoinGeckoTopCoins).mockResolvedValue([bitcoinResult]);
   });
 
   afterEach(() => {
@@ -51,14 +52,14 @@ describe('usePortfolioSettingsController', () => {
     expect(result.current.selectedCoin).toBeNull();
   });
 
-  it('searches CoinGecko once the query reaches two characters', async () => {
+  it('filters the downloaded top-coins list locally once the query reaches two characters', async () => {
     const { result } = renderController();
     await waitFor(() => expect(result.current.settings).toEqual(initialSettings));
 
     act(() => result.current.setQuery('bi'));
 
     await waitFor(() => expect(result.current.searchResults).toEqual([bitcoinResult]));
-    expect(searchCoinGeckoCoins).toHaveBeenCalledWith('bi');
+    expect(getCoinGeckoTopCoins).toHaveBeenCalledTimes(1);
   });
 
   it('does nothing when selecting a key that is not among the search results', async () => {

@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { indexedDbPortfolioConfigRepository } from '../data/portfolioConfigRepository';
-import { searchCoinGeckoCoins } from '../data/coingeckoClient';
+import { filterCoinGeckoCoins, getCoinGeckoTopCoins } from '../data/coingeckoClient';
 import {
   coinSearchResultSchema,
   portfolioSettingsConfigSchema,
@@ -102,12 +102,17 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
   });
   const settings = draftSettings ?? settingsQuery.data ?? defaultSettings;
   const normalizedQuery = query.trim();
-  const searchQuery = useQuery({
-    enabled: normalizedQuery.length >= 2,
-    queryFn: () => searchCoinGeckoCoins(normalizedQuery),
-    queryKey: ['coingecko-search', normalizedQuery.toLowerCase()],
-    staleTime: 24 * 60 * 60 * 1_000,
+  // Downloaded once (and cached in IndexedDB for a week) so autocomplete filters locally
+  // instead of hitting CoinGecko's rate-limited `/search` endpoint on every keystroke.
+  const topCoinsQuery = useQuery({
+    queryFn: () => getCoinGeckoTopCoins(),
+    queryKey: ['coingecko-top-coins'],
+    staleTime: Infinity,
   });
+  const searchResults = useMemo(
+    () => filterCoinGeckoCoins(normalizedQuery, topCoinsQuery.data ?? []),
+    [normalizedQuery, topCoinsQuery.data],
+  );
   const saveMutation = useMutation({
     mutationFn: (nextSettings: PortfolioSettingsConfig) =>
       indexedDbPortfolioConfigRepository.saveSettings(nextSettings),
@@ -134,8 +139,8 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
     selectedCoin: selectedCoin ?? null,
     amount,
     purchasedAt,
-    searchResults: searchQuery.data ?? [],
-    isSearching: searchQuery.isFetching,
+    searchResults,
+    isSearching: normalizedQuery.length >= 2 && topCoinsQuery.isLoading,
     isSaving: saveMutation.isPending,
     saveError: saveMutation.isError,
     canAddHolding: holdingForm.formState.isValid,
@@ -150,7 +155,7 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
       holdingForm.setValue('purchasedAt', purchasedAt, { shouldValidate: true });
     },
     selectCoinByKey: (key): void => {
-      const coin = (searchQuery.data ?? []).find((item) => item.id === key);
+      const coin = searchResults.find((item) => item.id === key);
       if (coin !== undefined) {
         selectCoin(coin);
       }

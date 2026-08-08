@@ -138,12 +138,14 @@ async function buildHoldingSeries(
   now: Date,
 ): Promise<AssetMarketSeries> {
   const start = getEffectivePeriodStart(activePeriod, holding.purchasedAt, now);
+  // A single holding's chart request failing (rate limit, network hiccup, delisted coin) must not
+  // take down the rest of the portfolio snapshot, so it degrades to a flat/zero series instead.
   const chart = await getCoinGeckoMarketChart(
     holding.coinGeckoId,
     currency,
     toUnixSeconds(start),
     toUnixSeconds(now),
-  );
+  ).catch(() => []);
   const activePricePoints = buildPricePoints(holding, chart, activePeriod, now);
   const priceEntries = PORTFOLIO_PERIODS.map(
     (period) => [period, period === activePeriod ? activePricePoints : []] as const,

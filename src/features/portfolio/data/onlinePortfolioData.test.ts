@@ -101,6 +101,51 @@ describe('onlinePortfolioData', () => {
     ).toBe(0);
   });
 
+  it('keeps the snapshot online when one holding fails to load its chart', async () => {
+    jest
+      .mocked(getCoinGeckoMarketChart)
+      .mockImplementationOnce(() => Promise.reject(new Error('rate limited')))
+      .mockResolvedValueOnce([
+        { price: 3_000, timestamp: new Date('2026-08-01T12:00:00.000Z').getTime() },
+        { price: 3_200, timestamp: now.getTime() },
+      ]);
+
+    const snapshot = await buildOnlinePortfolioSnapshot(
+      {
+        fiatCurrency: 'eur',
+        holdings: [
+          {
+            amount: 0.5,
+            coinGeckoId: 'bitcoin',
+            id: 'btc-1',
+            name: 'Bitcoin',
+            purchasedAt: '2026-08-01',
+            symbol: 'BTC',
+          },
+          {
+            amount: 2,
+            coinGeckoId: 'ethereum',
+            id: 'eth-1',
+            name: 'Ethereum',
+            purchasedAt: '2026-08-01',
+            symbol: 'ETH',
+          },
+        ],
+        personName: 'JW',
+      },
+      '1D',
+      now,
+    );
+
+    expect(snapshot.mode).toBe('online');
+    expect(
+      snapshot.marketSeries.find((series) => series.assetId === 'btc-1')?.prices['1D'][0]?.value,
+    ).toBe(0);
+    expect(
+      snapshot.marketSeries.find((series) => series.assetId === 'eth-1')?.prices['1D'][0]?.value,
+    ).toBe(6_400);
+  });
+
   it('covers the remaining period starts used by online ranges', () => {
     expect(getPeriodStartDate('1D', now).getDate()).toBe(7);
     expect(getPeriodStartDate('1M', now).getMonth()).toBe(6);

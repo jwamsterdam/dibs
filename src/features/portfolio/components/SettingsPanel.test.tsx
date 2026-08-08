@@ -31,20 +31,16 @@ describe('SettingsPanel', () => {
       searchResults: [
         {
           id: 'ethereum',
-          marketCapRank: 2,
           name: 'Ethereum',
           symbol: 'ETH',
-          thumb: 'https://example.test/eth.png',
         },
       ],
       selectCoinByKey: jest.fn(),
       selectCurrencyByKey: jest.fn(),
       selectedCoin: {
         id: 'bitcoin',
-        marketCapRank: 1,
         name: 'Bitcoin',
         symbol: 'BTC',
-        thumb: 'https://example.test/btc.png',
       },
       setAmount: jest.fn(),
       setPurchasedAt: jest.fn(),
@@ -96,7 +92,8 @@ describe('SettingsPanel', () => {
     const user = userEvent.setup();
     renderWithProviders(<SettingsPanel onClose={jest.fn()} />);
 
-    await user.click(screen.getByRole('button', { name: /Show suggestions/ }));
+    await user.click(screen.getByRole('combobox', { name: 'Coin' }));
+    await user.keyboard('{ArrowDown}');
     await user.click(screen.getByRole('option', { name: /Ethereum \(ETH\)/ }));
 
     expect(mockController.selectCoinByKey).toHaveBeenCalledWith('ethereum');

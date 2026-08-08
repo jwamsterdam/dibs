@@ -1,6 +1,6 @@
+import { parseDate } from '@internationalized/date';
 import { useTranslation } from 'react-i18next';
 import {
-  Button as ComboBoxButton,
   ComboBox,
   Input as ComboBoxInput,
   Label as ComboBoxLabel,
@@ -8,6 +8,19 @@ import {
   ListBoxItem as ComboBoxListBoxItem,
   Popover as ComboBoxPopover,
 } from 'react-aria-components/ComboBox';
+import { CalendarMonthPicker, CalendarYearPicker } from 'react-aria-components/Calendar';
+import {
+  Button as DatePickerButton,
+  Calendar,
+  CalendarCell,
+  CalendarGrid,
+  DateInput,
+  DatePicker,
+  DateSegment,
+  Group as DatePickerGroup,
+  Label as DatePickerLabel,
+  Popover as DatePickerPopover,
+} from 'react-aria-components/DatePicker';
 import { Dialog, Heading } from 'react-aria-components/Dialog';
 import { Modal, ModalOverlay } from 'react-aria-components/Modal';
 import {
@@ -21,7 +34,7 @@ import {
 } from 'react-aria-components/Select';
 import { Input, Label, TextField } from 'react-aria-components/TextField';
 import { Button } from '@/shared/components/Button/Button';
-import { focusRingClassName, focusWithinRingClassName } from '@/shared/lib/cn';
+import { focusFieldBorderClassName, focusWithinFieldBorderClassName } from '@/shared/lib/cn';
 import { usePortfolioSettingsController } from '../hooks/usePortfolioSettingsController';
 
 type SettingsPanelProps = {
@@ -73,41 +86,49 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
           ) : null}
 
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-4">
-            <Select
-              className="grid gap-2 border-b border-[var(--color-border-strong)] pb-4 text-[0.82rem] font-medium text-fg-muted"
-              onSelectionChange={controller.selectCurrencyByKey}
-              selectedKey={controller.settings.fiatCurrency}
-            >
-              <SelectLabel>{t('settings.currency')}</SelectLabel>
-              <SelectButton
-                className={`grid h-11 w-full grid-cols-[1fr_auto] items-center ${fieldRadiusClassName} border border-[var(--color-border-subtle)] bg-bg-primary px-3 text-left text-[1rem] font-normal uppercase text-fg-primary outline-none ${focusRingClassName}`}
+            <fieldset className="m-0 grid gap-3 border-0 border-b border-[var(--color-border-strong)] p-0 pb-4">
+              <legend className="p-0 text-[0.95rem] font-semibold text-fg-primary">
+                {t('settings.currencySectionTitle')}
+              </legend>
+              <Select
+                className="group grid gap-2 text-[0.82rem] font-medium text-fg-muted"
+                onSelectionChange={controller.selectCurrencyByKey}
+                selectedKey={controller.settings.fiatCurrency}
               >
-                <SelectValue />
-                <span
-                  aria-hidden="true"
-                  className="mb-1 h-2 w-2 rotate-45 border-b-2 border-r-2 border-fg-muted"
-                />
-              </SelectButton>
-              <Popover className="w-[var(--trigger-width)] overflow-hidden rounded-[0.75rem] border border-[var(--color-border-subtle)] bg-bg-primary">
-                <ListBox className="p-1 outline-none">
-                  {controller.currencies.map((currency) => (
-                    <ListBoxItem
-                      className="cursor-default rounded-[0.45rem] px-3 py-2 text-[1rem] font-normal uppercase text-fg-primary outline-none data-[focused]:bg-bg-secondary data-[selected]:font-semibold"
-                      id={currency}
-                      key={currency}
-                      textValue={currency.toUpperCase()}
-                    >
-                      {currency.toUpperCase()}
-                    </ListBoxItem>
-                  ))}
-                </ListBox>
-              </Popover>
-            </Select>
+                <SelectLabel>{t('settings.currency')}</SelectLabel>
+                <SelectButton
+                  className={`grid h-11 w-full grid-cols-[1fr_auto] items-center ${fieldRadiusClassName} border border-[var(--color-border-subtle)] bg-bg-primary px-3 text-left text-[1rem] font-normal uppercase text-fg-primary group-data-[open]:border-brand-primary ${focusFieldBorderClassName}`}
+                >
+                  <SelectValue />
+                  <span
+                    aria-hidden="true"
+                    className="mb-1 h-2 w-2 rotate-45 border-b-2 border-r-2 border-fg-muted"
+                  />
+                </SelectButton>
+                <Popover className="w-[var(--trigger-width)] overflow-hidden rounded-[0.75rem] border border-[var(--color-border-subtle)] bg-bg-primary">
+                  <ListBox className="p-1 outline-none">
+                    {controller.currencies.map((currency) => (
+                      <ListBoxItem
+                        className="cursor-default rounded-[0.45rem] px-3 py-2 text-[1rem] font-normal uppercase text-fg-primary outline-none data-[focused]:bg-bg-secondary data-[selected]:font-semibold"
+                        id={currency}
+                        key={currency}
+                        textValue={currency.toUpperCase()}
+                      >
+                        {currency.toUpperCase()}
+                      </ListBoxItem>
+                    ))}
+                  </ListBox>
+                </Popover>
+              </Select>
+            </fieldset>
 
-            <div className="grid gap-3">
+            <fieldset className="m-0 grid gap-3 border-0 p-0">
+              <legend className="p-0 text-[0.95rem] font-semibold text-fg-primary">
+                {t('settings.addCoinSectionTitle')}
+              </legend>
+
               <ComboBox
                 allowsCustomValue
-                allowsEmptyCollection
                 className="grid gap-2 text-[0.82rem] font-medium text-fg-muted"
                 inputValue={controller.query}
                 menuTrigger="input"
@@ -116,22 +137,10 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
                 selectedKey={controller.selectedCoin?.id ?? null}
               >
                 <ComboBoxLabel>{t('settings.coin')}</ComboBoxLabel>
-                <div
-                  className={`grid grid-cols-[minmax(0,1fr)_2.25rem] ${fieldRadiusClassName} border border-[var(--color-border-subtle)] bg-bg-primary ${focusWithinRingClassName}`}
-                >
-                  <ComboBoxInput
-                    className={`h-11 min-w-0 ${fieldRadiusClassName} bg-bg-primary px-3 text-[1rem] text-fg-primary outline-none placeholder:text-fg-muted`}
-                    placeholder={t('settings.searchPlaceholder')}
-                  />
-                  <ComboBoxButton
-                    className={`grid h-11 place-items-center ${fieldRadiusClassName} text-fg-muted outline-none`}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="mb-1 h-2 w-2 rotate-45 border-b-2 border-r-2 border-fg-muted"
-                    />
-                  </ComboBoxButton>
-                </div>
+                <ComboBoxInput
+                  className={`h-11 w-full min-w-0 ${fieldRadiusClassName} border border-[var(--color-border-subtle)] bg-bg-primary px-3 text-[1rem] text-fg-primary placeholder:text-fg-muted ${focusFieldBorderClassName}`}
+                  placeholder={t('settings.searchPlaceholder')}
+                />
 
                 <ComboBoxPopover className="w-[var(--trigger-width)] overflow-hidden rounded-[0.75rem] border border-[var(--color-border-subtle)] bg-bg-primary">
                   <ComboBoxListBox className="max-h-44 overflow-y-auto p-1 outline-none">
@@ -157,22 +166,115 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
                 <TextField className="grid gap-2 text-[0.82rem] font-medium text-fg-muted">
                   <Label>{t('settings.amount')}</Label>
                   <Input
-                    className={`h-11 w-full min-w-0 ${fieldRadiusClassName} border border-[var(--color-border-subtle)] bg-bg-primary px-3 text-[1rem] text-fg-primary ${focusRingClassName}`}
+                    className={`h-11 w-full min-w-0 ${fieldRadiusClassName} border border-[var(--color-border-subtle)] bg-bg-primary px-3 text-[1rem] text-fg-primary ${focusFieldBorderClassName}`}
                     inputMode="decimal"
                     onChange={(event) => controller.setAmount(event.target.value)}
                     placeholder="0,00"
                     value={controller.amount}
                   />
                 </TextField>
-                <TextField className="grid gap-2 text-[0.82rem] font-medium text-fg-muted">
-                  <Label>{t('settings.purchasedAt')}</Label>
-                  <Input
-                    className={`h-11 w-full min-w-0 ${fieldRadiusClassName} border border-[var(--color-border-subtle)] bg-bg-primary px-2 text-[0.92rem] text-fg-primary ${focusRingClassName}`}
-                    onChange={(event) => controller.setPurchasedAt(event.target.value)}
-                    type="date"
-                    value={controller.purchasedAt}
-                  />
-                </TextField>
+                <DatePicker
+                  className="grid gap-2 text-[0.82rem] font-medium text-fg-muted"
+                  onChange={(date) => controller.setPurchasedAt(date ? date.toString() : '')}
+                  value={controller.purchasedAt ? parseDate(controller.purchasedAt) : null}
+                >
+                  <DatePickerLabel>{t('settings.purchasedAt')}</DatePickerLabel>
+                  <DatePickerGroup
+                    className={`grid h-11 w-full min-w-0 grid-cols-[1fr_auto] items-center ${fieldRadiusClassName} border border-[var(--color-border-subtle)] bg-bg-primary px-2 text-[0.92rem] text-fg-primary ${focusWithinFieldBorderClassName}`}
+                  >
+                    <DateInput className="flex items-center">
+                      {(segment) => (
+                        <DateSegment
+                          className="rounded-sm px-0.5 tabular-nums outline-none data-[focused]:bg-bg-secondary data-[placeholder]:text-fg-muted"
+                          segment={segment}
+                        />
+                      )}
+                    </DateInput>
+                    <DatePickerButton className="grid h-7 w-7 place-items-center rounded-full text-fg-muted outline-none data-[focus-visible]:bg-bg-secondary">
+                      <svg
+                        aria-hidden="true"
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="1.6"
+                        viewBox="0 0 24 24"
+                      >
+                        <rect height="15" rx="2.5" width="17" x="3.5" y="5" />
+                        <path d="M3.5 9.5h17M8 3v3.5M16 3v3.5" />
+                      </svg>
+                    </DatePickerButton>
+                  </DatePickerGroup>
+                  <DatePickerPopover className="overflow-hidden rounded-[0.75rem] border border-[var(--color-border-subtle)] bg-bg-primary p-3">
+                    <Dialog className="outline-none">
+                      <Calendar className="grid gap-2">
+                        <header className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
+                          <DatePickerButton
+                            className="grid h-8 w-8 place-items-center rounded-full text-fg-primary outline-none data-[focus-visible]:bg-bg-secondary data-[hovered]:bg-bg-secondary"
+                            slot="previous"
+                          >
+                            <span
+                              aria-hidden="true"
+                              className="h-2 w-2 rotate-45 border-b-2 border-l-2 border-fg-primary"
+                            />
+                          </DatePickerButton>
+                          <div className="grid grid-cols-2 gap-1">
+                            <CalendarMonthPicker>
+                              {({ 'aria-label': ariaLabel, items, onChange, value }) => (
+                                <select
+                                  aria-label={ariaLabel}
+                                  className={`w-full cursor-pointer rounded-[0.4rem] bg-bg-primary py-0.5 text-center text-[0.92rem] font-semibold text-fg-primary ${focusFieldBorderClassName}`}
+                                  onChange={(event) => onChange(Number(event.target.value))}
+                                  value={value}
+                                >
+                                  {items.map((item) => (
+                                    <option key={item.id} value={item.id}>
+                                      {item.formatted}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+                            </CalendarMonthPicker>
+                            <CalendarYearPicker>
+                              {({ 'aria-label': ariaLabel, items, onChange, value }) => (
+                                <select
+                                  aria-label={ariaLabel}
+                                  className={`w-full cursor-pointer rounded-[0.4rem] bg-bg-primary py-0.5 text-center text-[0.92rem] font-semibold text-fg-primary ${focusFieldBorderClassName}`}
+                                  onChange={(event) => onChange(Number(event.target.value))}
+                                  value={value}
+                                >
+                                  {items.map((item) => (
+                                    <option key={item.id} value={item.id}>
+                                      {item.formatted}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+                            </CalendarYearPicker>
+                          </div>
+                          <DatePickerButton
+                            className="grid h-8 w-8 place-items-center rounded-full text-fg-primary outline-none data-[focus-visible]:bg-bg-secondary data-[hovered]:bg-bg-secondary"
+                            slot="next"
+                          >
+                            <span
+                              aria-hidden="true"
+                              className="h-2 w-2 -rotate-45 border-b-2 border-r-2 border-fg-primary"
+                            />
+                          </DatePickerButton>
+                        </header>
+                        <CalendarGrid className="w-full [&_td]:p-0.5">
+                          {(date) => (
+                            <CalendarCell
+                              className="grid h-8 w-8 cursor-default place-items-center rounded-full text-[0.88rem] text-fg-primary outline-none data-[disabled]:opacity-30 data-[unavailable]:opacity-30 data-[focus-visible]:bg-bg-secondary data-[hovered]:bg-bg-secondary data-[outside-month]:text-fg-muted data-[selected]:bg-brand-primary data-[selected]:font-semibold data-[selected]:text-fg-on-brand data-[today]:font-semibold"
+                              date={date}
+                            />
+                          )}
+                        </CalendarGrid>
+                      </Calendar>
+                    </Dialog>
+                  </DatePickerPopover>
+                </DatePicker>
               </div>
 
               <Button
@@ -184,7 +286,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
               >
                 {t('settings.addHolding')}
               </Button>
-            </div>
+            </fieldset>
 
             <ul className="border-t border-[var(--color-border-strong)]">
               {controller.settings.holdings.map((holding) => (

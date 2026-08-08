@@ -22,6 +22,4 @@ export const coinSearchResultSchema = z.object({
   id: z.string(),
   name: z.string(),
   symbol: z.string(),
-  marketCapRank: z.number().nullable(),
-  thumb: z.string(),
 });

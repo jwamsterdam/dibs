@@ -27,6 +27,8 @@
     "close": "Sluit instellingen",
     "saving": "Opslaan",
     "saveError": "Opslaan mislukt",
+    "currencySectionTitle": "Toon waarden in de volgende valuta",
+    "addCoinSectionTitle": "Voeg een coin toe",
     "coin": "Coin",
     "searchPlaceholder": "Zoek coin",
     "searching": "Zoeken...",
