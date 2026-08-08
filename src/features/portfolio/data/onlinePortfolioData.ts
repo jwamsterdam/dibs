@@ -15,6 +15,17 @@ import { portfolioSnapshotSchema } from '../validation/portfolio.schema';
 import { getCoinGeckoMarketChart, type CoinGeckoChartPoint } from './coingeckoClient';
 
 const sampleCount = 7;
+// CoinGecko's public API rejects `market_chart/range` requests older than 365 days
+// (error 10012, "Public API users are limited to querying historical data within the past
+// 365 days"), so a purchase date beyond that gets clamped rather than sent straight to the
+// API — otherwise the whole request 401s and the holding falls back to a flat/zero series.
+const coinGeckoMaxHistoryDays = 364;
+
+function clampToCoinGeckoHistoryLimit(date: Date, now: Date): Date {
+  const earliestAllowed = new Date(now);
+  earliestAllowed.setDate(earliestAllowed.getDate() - coinGeckoMaxHistoryDays);
+  return date < earliestAllowed ? earliestAllowed : date;
+}
 
 export function getPeriodStartDate(period: PortfolioPeriod, now: Date): Date {
   const start = new Date(now);
@@ -53,7 +64,8 @@ export function getEffectivePeriodStart(
 ): Date {
   const periodStart = getPeriodStartDate(period, now);
   const purchaseDate = new Date(`${purchasedAt}T00:00:00.000Z`);
-  return purchaseDate > periodStart ? purchaseDate : periodStart;
+  const effectiveStart = purchaseDate > periodStart ? purchaseDate : periodStart;
+  return clampToCoinGeckoHistoryLimit(effectiveStart, now);
 }
 
 const currencyCodesByFiatCurrency: Record<

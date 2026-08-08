@@ -31,6 +31,18 @@ describe('onlinePortfolioData', () => {
     );
   });
 
+  it('clamps a purchase date older than 364 days instead of exceeding the CoinGecko public API range', () => {
+    const start = getEffectivePeriodStart('ALL', '2024-01-15', now);
+
+    expect(start.toISOString()).toBe('2025-08-09T12:00:00.000Z');
+  });
+
+  it('does not clamp a purchase date that is already within the allowed range', () => {
+    expect(getEffectivePeriodStart('ALL', '2026-07-12', now).toISOString()).toBe(
+      '2026-07-12T00:00:00.000Z',
+    );
+  });
+
   it('starts YTD charts at the beginning of the current year', () => {
     const start = getPeriodStartDate('YTD', now);
 
