@@ -42,7 +42,7 @@ const onlineSnapshot: PortfolioSnapshot = {
 
 describe('readOnlyMockPortfolioDataSource', () => {
   it('exposes the agreed read-only future provider direction', async () => {
-    const snapshot = await readOnlyMockPortfolioDataSource.getSnapshot('1D');
+    const snapshot = await readOnlyMockPortfolioDataSource.getSnapshot();
 
     expect(snapshot.mode).toBe('read-only-mock');
     expect(snapshot.futurePriceProvider).toBe('coingecko');
@@ -59,7 +59,7 @@ describe('configuredPortfolioDataSource', () => {
   it('falls back to the read-only mock snapshot when no settings are configured', async () => {
     jest.mocked(indexedDbPortfolioConfigRepository.loadSettings).mockResolvedValue(null);
 
-    const snapshot = await configuredPortfolioDataSource.getSnapshot('1D');
+    const snapshot = await configuredPortfolioDataSource.getSnapshot();
 
     expect(snapshot.mode).toBe('read-only-mock');
     expect(buildOnlinePortfolioSnapshot).not.toHaveBeenCalled();
@@ -68,21 +68,21 @@ describe('configuredPortfolioDataSource', () => {
   it('falls back to the read-only mock snapshot once all holdings are removed', async () => {
     jest.mocked(indexedDbPortfolioConfigRepository.loadSettings).mockResolvedValue(emptySettings);
 
-    const snapshot = await configuredPortfolioDataSource.getSnapshot('1D');
+    const snapshot = await configuredPortfolioDataSource.getSnapshot();
 
     expect(snapshot.mode).toBe('read-only-mock');
     expect(buildOnlinePortfolioSnapshot).not.toHaveBeenCalled();
   });
 
-  it('builds an online snapshot from persisted settings for the requested period', async () => {
+  it('builds an online snapshot from persisted settings', async () => {
     jest
       .mocked(indexedDbPortfolioConfigRepository.loadSettings)
       .mockResolvedValue(settingsWithHoldings);
     jest.mocked(buildOnlinePortfolioSnapshot).mockResolvedValue(onlineSnapshot);
 
-    const snapshot = await configuredPortfolioDataSource.getSnapshot('1W');
+    const snapshot = await configuredPortfolioDataSource.getSnapshot();
 
-    expect(buildOnlinePortfolioSnapshot).toHaveBeenCalledWith(settingsWithHoldings, '1W');
+    expect(buildOnlinePortfolioSnapshot).toHaveBeenCalledWith(settingsWithHoldings);
     expect(snapshot).toBe(onlineSnapshot);
   });
 });

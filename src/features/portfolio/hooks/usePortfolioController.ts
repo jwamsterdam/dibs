@@ -89,10 +89,12 @@ export function usePortfolioController(): PortfolioController {
     queryKey: ['portfolio-settings'],
     staleTime: 5_000,
   });
+  // Not keyed by selectedPeriod: the snapshot carries every period's series at once, so
+  // switching tabs slices already-fetched data instead of triggering a new CoinGecko call.
   const snapshotQuery = useQuery({
     placeholderData: keepPreviousData,
-    queryFn: () => configuredPortfolioDataSource.getSnapshot(selectedPeriod),
-    queryKey: ['portfolio-snapshot', selectedPeriod, settingsQuery.dataUpdatedAt],
+    queryFn: () => configuredPortfolioDataSource.getSnapshot(),
+    queryKey: ['portfolio-snapshot', settingsQuery.dataUpdatedAt],
     staleTime: 30_000,
   });
   const snapshot = snapshotQuery.data ?? mockPortfolioSnapshot;

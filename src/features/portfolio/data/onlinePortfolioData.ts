@@ -12,7 +12,11 @@ import type {
   PortfolioSettingsConfig,
 } from '../types/settings';
 import { portfolioSnapshotSchema } from '../validation/portfolio.schema';
-import { getCoinGeckoMarketChart, type CoinGeckoChartPoint } from './coingeckoClient';
+import {
+  chartCacheTtlMs,
+  getCoinGeckoMarketChart,
+  type CoinGeckoChartPoint,
+} from './coingeckoClient';
 
 const sampleCount = 7;
 // CoinGecko's public API rejects `market_chart/range` requests older than 365 days
@@ -20,6 +24,8 @@ const sampleCount = 7;
 // 365 days"), so a purchase date beyond that gets clamped rather than sent straight to the
 // API — otherwise the whole request 401s and the holding falls back to a flat/zero series.
 const coinGeckoMaxHistoryDays = 364;
+// Covers the "1D" tab with margin; the daily bucket below covers everything longer.
+const recentBucketDays = 2;
 
 function clampToCoinGeckoHistoryLimit(date: Date, now: Date): Date {
   const earliestAllowed = new Date(now);
@@ -86,6 +92,16 @@ function toUnixSeconds(date: Date): number {
   return Math.floor(date.getTime() / 1_000);
 }
 
+/**
+ * Rounds down to the same cache-TTL-sized window used by {@link getCoinGeckoMarketChart}'s
+ * IndexedDB cache, so the exact request range — and therefore its cache key — stays identical
+ * across snapshot rebuilds within that window. Without this, `now` (and so the request's `to`)
+ * changes on every rebuild, and the 30-minute cache TTL never actually gets reused.
+ */
+function roundDownToCacheWindow(date: Date): Date {
+  return new Date(Math.floor(date.getTime() / chartCacheTtlMs) * chartCacheTtlMs);
+}
+
 function createSampleTimes(from: Date, to: Date): readonly number[] {
   const fromMs = from.getTime();
   const toMs = to.getTime();
@@ -117,16 +133,63 @@ function findNearestPrice(points: readonly CoinGeckoChartPoint[], timestamp: num
   return nearestPoint.price;
 }
 
-function buildPricePoints(
+/**
+ * The two chart ranges a coin needs to cover every period tab. "1D" reads from `recent`
+ * (a couple of days, hourly-ish resolution); every longer tab reads from `history` (up to the
+ * 364-day API limit, daily resolution). Fetched once per coin — not per holding, and not per
+ * period tab — so switching tabs, or holding the same coin twice, costs nothing extra.
+ */
+type CoinCharts = {
+  readonly recent: readonly CoinGeckoChartPoint[];
+  readonly history: readonly CoinGeckoChartPoint[];
+};
+
+function bucketForPeriod(period: PortfolioPeriod): keyof CoinCharts {
+  return period === '1D' ? 'recent' : 'history';
+}
+
+async function fetchCoinCharts(
+  coinId: string,
+  currency: PortfolioFiatCurrency,
+  now: Date,
+): Promise<CoinCharts> {
+  const cacheNow = roundDownToCacheWindow(now);
+  const recentFrom = new Date(cacheNow);
+  recentFrom.setDate(recentFrom.getDate() - recentBucketDays);
+  const historyFrom = new Date(cacheNow);
+  historyFrom.setDate(historyFrom.getDate() - coinGeckoMaxHistoryDays);
+
+  // A failing bucket degrades to an empty (flat/zero) series instead of taking the other
+  // holdings — or the other bucket — down with it.
+  const [recent, history] = await Promise.all([
+    getCoinGeckoMarketChart(
+      coinId,
+      currency,
+      toUnixSeconds(recentFrom),
+      toUnixSeconds(cacheNow),
+    ).catch(() => []),
+    getCoinGeckoMarketChart(
+      coinId,
+      currency,
+      toUnixSeconds(historyFrom),
+      toUnixSeconds(cacheNow),
+    ).catch(() => []),
+  ]);
+
+  return { recent, history };
+}
+
+function buildPricePointsForPeriod(
   holding: PortfolioHoldingConfig,
-  marketChart: readonly CoinGeckoChartPoint[],
+  charts: CoinCharts,
   period: PortfolioPeriod,
   now: Date,
 ): readonly PricePoint[] {
+  const chart = charts[bucketForPeriod(period)];
   const start = getEffectivePeriodStart(period, holding.purchasedAt, now);
   return createSampleTimes(start, now).map((timestamp) => ({
     timestamp: new Date(timestamp).toISOString(),
-    value: findNearestPrice(marketChart, timestamp) * holding.amount,
+    value: findNearestPrice(chart, timestamp) * holding.amount,
   }));
 }
 
@@ -143,24 +206,14 @@ function buildTotalPoints(
   }));
 }
 
-async function buildHoldingSeries(
+function buildHoldingSeries(
   holding: PortfolioHoldingConfig,
-  currency: PortfolioFiatCurrency,
-  activePeriod: PortfolioPeriod,
+  chartsByCoin: ReadonlyMap<string, CoinCharts>,
   now: Date,
-): Promise<AssetMarketSeries> {
-  const start = getEffectivePeriodStart(activePeriod, holding.purchasedAt, now);
-  // A single holding's chart request failing (rate limit, network hiccup, delisted coin) must not
-  // take down the rest of the portfolio snapshot, so it degrades to a flat/zero series instead.
-  const chart = await getCoinGeckoMarketChart(
-    holding.coinGeckoId,
-    currency,
-    toUnixSeconds(start),
-    toUnixSeconds(now),
-  ).catch(() => []);
-  const activePricePoints = buildPricePoints(holding, chart, activePeriod, now);
+): AssetMarketSeries {
+  const charts = chartsByCoin.get(holding.coinGeckoId) ?? { recent: [], history: [] };
   const priceEntries = PORTFOLIO_PERIODS.map(
-    (period) => [period, period === activePeriod ? activePricePoints : []] as const,
+    (period) => [period, buildPricePointsForPeriod(holding, charts, period, now)] as const,
   );
 
   return {
@@ -171,19 +224,23 @@ async function buildHoldingSeries(
 
 export async function buildOnlinePortfolioSnapshot(
   settings: PortfolioSettingsConfig,
-  activePeriod: PortfolioPeriod,
   now = new Date(),
 ): Promise<PortfolioSnapshot> {
-  const holdingSeries = await Promise.all(
-    settings.holdings.map((holding) =>
-      buildHoldingSeries(holding, settings.fiatCurrency, activePeriod, now),
+  const uniqueCoinIds = [...new Set(settings.holdings.map((holding) => holding.coinGeckoId))];
+  const chartsByCoin = new Map(
+    await Promise.all(
+      uniqueCoinIds.map(
+        async (coinId) =>
+          [coinId, await fetchCoinCharts(coinId, settings.fiatCurrency, now)] as const,
+      ),
     ),
   );
+
+  const holdingSeries = settings.holdings.map((holding) =>
+    buildHoldingSeries(holding, chartsByCoin, now),
+  );
   const totalPrices = Object.fromEntries(
-    PORTFOLIO_PERIODS.map((period) => [
-      period,
-      period === activePeriod ? buildTotalPoints(holdingSeries, period) : [],
-    ]),
+    PORTFOLIO_PERIODS.map((period) => [period, buildTotalPoints(holdingSeries, period)]),
   ) as AssetMarketSeries['prices'];
 
   const assets: PortfolioAsset[] = settings.holdings.map((holding) => ({

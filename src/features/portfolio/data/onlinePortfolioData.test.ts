@@ -6,6 +6,7 @@ import {
 import { getCoinGeckoMarketChart } from './coingeckoClient';
 
 jest.mock('./coingeckoClient', () => ({
+  ...jest.requireActual('./coingeckoClient'),
   getCoinGeckoMarketChart: jest.fn(),
 }));
 
@@ -13,10 +14,13 @@ describe('onlinePortfolioData', () => {
   const now = new Date('2026-08-08T12:00:00.000Z');
 
   beforeEach(() => {
-    jest.mocked(getCoinGeckoMarketChart).mockResolvedValue([
-      { price: 60_000, timestamp: new Date('2026-08-01T12:00:00.000Z').getTime() },
-      { price: 62_000, timestamp: now.getTime() },
-    ]);
+    jest
+      .mocked(getCoinGeckoMarketChart)
+      .mockReset()
+      .mockResolvedValue([
+        { price: 60_000, timestamp: new Date('2026-08-01T12:00:00.000Z').getTime() },
+        { price: 62_000, timestamp: now.getTime() },
+      ]);
   });
 
   it('uses the period start when the purchase happened before the selected period', () => {
@@ -52,7 +56,7 @@ describe('onlinePortfolioData', () => {
     expect(start.getHours()).toBe(0);
   });
 
-  it('builds an online snapshot from configured CoinGecko holdings', async () => {
+  it('builds an online snapshot with every period pre-computed, not just one', async () => {
     const snapshot = await buildOnlinePortfolioSnapshot(
       {
         fiatCurrency: 'eur',
@@ -68,7 +72,6 @@ describe('onlinePortfolioData', () => {
         ],
         personName: 'JW',
       },
-      '1W',
       now,
     );
 
@@ -80,10 +83,67 @@ describe('onlinePortfolioData', () => {
     ).toHaveLength(7);
     expect(
       snapshot.marketSeries.find((series) => series.assetId === 'btc-1')?.prices['1D'],
-    ).toEqual([]);
+    ).toHaveLength(7);
     expect(
       snapshot.marketSeries.find((series) => series.assetId === 'total')?.prices['1W'][0]?.value,
     ).toBe(30_000);
+  });
+
+  it('fetches each unique coin only once, even when it is held twice', async () => {
+    await buildOnlinePortfolioSnapshot(
+      {
+        fiatCurrency: 'eur',
+        holdings: [
+          {
+            amount: 0.3,
+            coinGeckoId: 'bitcoin',
+            id: 'btc-1',
+            name: 'Bitcoin',
+            purchasedAt: '2024-01-15',
+            symbol: 'BTC',
+          },
+          {
+            amount: 0.15,
+            coinGeckoId: 'bitcoin',
+            id: 'btc-2',
+            name: 'Bitcoin',
+            purchasedAt: '2025-06-08',
+            symbol: 'BTC',
+          },
+        ],
+        personName: 'JW',
+      },
+      now,
+    );
+
+    // One "recent" + one "history" request for bitcoin — not one pair per holding, and not one
+    // request per period tab.
+    expect(getCoinGeckoMarketChart).toHaveBeenCalledTimes(2);
+  });
+
+  it('rounds the request window to the cache TTL so repeat builds reuse the same cache key', async () => {
+    await buildOnlinePortfolioSnapshot(
+      {
+        fiatCurrency: 'eur',
+        holdings: [
+          {
+            amount: 0.5,
+            coinGeckoId: 'bitcoin',
+            id: 'btc-1',
+            name: 'Bitcoin',
+            purchasedAt: '2026-08-01',
+            symbol: 'BTC',
+          },
+        ],
+        personName: 'JW',
+      },
+      now,
+    );
+
+    const cacheTtlSeconds = 30 * 60;
+    jest.mocked(getCoinGeckoMarketChart).mock.calls.forEach(([, , , toSeconds]) => {
+      expect(toSeconds % cacheTtlSeconds).toBe(0);
+    });
   });
 
   it('uses zero-valued chart samples when CoinGecko returns no chart prices', async () => {
@@ -104,7 +164,6 @@ describe('onlinePortfolioData', () => {
         ],
         personName: 'JW',
       },
-      '1D',
       now,
     );
 
@@ -113,14 +172,17 @@ describe('onlinePortfolioData', () => {
     ).toBe(0);
   });
 
-  it('keeps the snapshot online when one holding fails to load its chart', async () => {
+  it('keeps the snapshot online when one coin fails to load its chart', async () => {
+    const ethPoints = [
+      { price: 3_000, timestamp: new Date('2026-08-01T12:00:00.000Z').getTime() },
+      { price: 3_200, timestamp: now.getTime() },
+    ];
     jest
       .mocked(getCoinGeckoMarketChart)
-      .mockImplementationOnce(() => Promise.reject(new Error('rate limited')))
-      .mockResolvedValueOnce([
-        { price: 3_000, timestamp: new Date('2026-08-01T12:00:00.000Z').getTime() },
-        { price: 3_200, timestamp: now.getTime() },
-      ]);
+      .mockImplementationOnce(() => Promise.reject(new Error('rate limited'))) // bitcoin: recent
+      .mockImplementationOnce(() => Promise.reject(new Error('rate limited'))) // bitcoin: history
+      .mockResolvedValueOnce(ethPoints) // ethereum: recent
+      .mockResolvedValueOnce(ethPoints); // ethereum: history
 
     const snapshot = await buildOnlinePortfolioSnapshot(
       {
@@ -145,7 +207,6 @@ describe('onlinePortfolioData', () => {
         ],
         personName: 'JW',
       },
-      '1D',
       now,
     );
 

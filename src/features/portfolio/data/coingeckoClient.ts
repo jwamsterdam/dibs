@@ -6,7 +6,9 @@ import { getCachedOrFetch } from './coingeckoCache';
 
 const COINGECKO_BASE_URL = 'https://api.coingecko.com/api/v3';
 const topCoinsCacheTtlMs = 7 * 24 * 60 * 60 * 1_000;
-const chartCacheTtlMs = 30 * 60 * 1_000;
+/** Also used to round chart request windows so repeat snapshot builds within the same window hit
+ *  the IndexedDB cache instead of the network — see {@link onlinePortfolioData}. */
+export const chartCacheTtlMs = 30 * 60 * 1_000;
 const topCoinsCount = 250;
 const maxAutocompleteResults = 8;
 
