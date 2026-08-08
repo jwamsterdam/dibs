@@ -13,7 +13,7 @@ const ASSETS_DIR = 'dist/assets';
 
 // KB, gzipped.
 const BUDGETS = {
-  totalJs: 300,
+  totalJs: 310,
   totalCss: 50,
   singleChunk: 200,
 };

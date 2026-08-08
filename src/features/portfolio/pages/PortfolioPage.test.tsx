@@ -53,7 +53,7 @@ describe('PortfolioPage', () => {
 
     expect(totalChange).toHaveTextContent(/\+€\s?4\.218/);
 
-    await user.click(screen.getByRole('button', { name: '1W' }));
+    await user.click(screen.getByRole('tab', { name: '1W' }));
 
     expect(totalChange).toHaveTextContent(/\+€\s?11\.746/);
   });

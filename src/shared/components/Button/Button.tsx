@@ -1,27 +1,29 @@
-import { type ButtonHTMLAttributes, forwardRef } from 'react';
+import { forwardRef } from 'react';
+import { Button as AriaButton, type ButtonProps as AriaButtonProps } from 'react-aria-components/Button';
 import { cn } from '@/shared/lib/cn';
 
-export type ButtonVariant = 'primary' | 'secondary';
+export type ButtonVariant = 'ghost' | 'primary' | 'secondary';
 
-export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+export type ButtonProps = Omit<AriaButtonProps, 'className'> & {
   variant?: ButtonVariant;
+  className?: string;
 };
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
+  ghost: 'text-fg-primary hover:bg-bg-secondary',
   primary: 'bg-brand-primary text-fg-on-brand hover:opacity-90',
   secondary: 'bg-bg-secondary text-fg-primary hover:opacity-90',
 };
 
 /**
- * Generic button. Presentational only — colours route through theme tokens.
- * (Placeholder until the Untitled UI component set is wired in during WP0.)
+ * Generic React Aria button. Presentational only; colors route through theme tokens.
  */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   { variant = 'primary', className, type = 'button', ...props },
   ref,
 ) {
   return (
-    <button
+    <AriaButton
       ref={ref}
       type={type}
       className={cn(

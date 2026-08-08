@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from 'react-aria-components/Button';
 import { usePortfolioController } from '../hooks/usePortfolioController';
 import { AssetList } from '../components/AssetList';
 import { PeriodTabs } from '../components/PeriodTabs';
@@ -76,14 +77,14 @@ export function PortfolioPage(): React.JSX.Element {
           <h1 className="text-center text-[1.45rem] font-bold leading-tight tracking-normal">
             {controller.personName}
           </h1>
-          <button
+          <Button
             aria-label={t('aria.settings')}
             className="grid min-h-9 min-w-9 place-items-center rounded-full text-[1.35rem] font-light leading-none text-fg-primary transition-colors hover:bg-bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-            onClick={controller.openSettings}
+            onPress={controller.openSettings}
             type="button"
           >
             {'\u2699\uFE0E'}
-          </button>
+          </Button>
         </header>
         <PeriodTabs
           ariaLabel={t('aria.periodNavigation')}
