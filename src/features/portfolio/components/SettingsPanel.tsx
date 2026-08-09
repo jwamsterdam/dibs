@@ -1,4 +1,4 @@
-import { parseDate } from '@internationalized/date';
+import { getLocalTimeZone, parseDate, today } from '@internationalized/date';
 import { useTranslation } from 'react-i18next';
 import {
   ComboBox,
@@ -35,6 +35,7 @@ import {
 import { Input, Label, TextField } from 'react-aria-components/TextField';
 import { Button } from '@/shared/components/Button/Button';
 import { focusFieldBorderClassName, focusWithinFieldBorderClassName } from '@/shared/lib/cn';
+import { coinGeckoMaxHistoryDays } from '../data/onlinePortfolioData';
 import { usePortfolioSettingsController } from '../hooks/usePortfolioSettingsController';
 
 type SettingsPanelProps = {
@@ -43,9 +44,19 @@ type SettingsPanelProps = {
 
 const fieldRadiusClassName = 'rounded-[0.85rem]';
 
+function formatCurrencyValue(value: number, currency: string): string {
+  return new Intl.NumberFormat('nl-NL', {
+    currency: currency.toUpperCase(),
+    maximumFractionDigits: 0,
+    style: 'currency',
+  }).format(value);
+}
+
 export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Element {
   const controller = usePortfolioSettingsController();
   const { t } = useTranslation('portfolio');
+  // CoinGecko's free tier can't price a date further back than this, so it's not offered.
+  const minPurchaseDate = today(getLocalTimeZone()).subtract({ days: coinGeckoMaxHistoryDays });
 
   return (
     <ModalOverlay
@@ -175,6 +186,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
                 </TextField>
                 <DatePicker
                   className="grid gap-2 text-[0.82rem] font-medium text-fg-muted"
+                  minValue={minPurchaseDate}
                   onChange={(date) => controller.setPurchasedAt(date ? date.toString() : '')}
                   value={controller.purchasedAt ? parseDate(controller.purchasedAt) : null}
                 >
@@ -276,6 +288,22 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
                   </DatePickerPopover>
                 </DatePicker>
               </div>
+
+              {controller.purchaseValue !== null ? (
+                <p className="text-[0.78rem] text-fg-muted" role="status">
+                  {t('settings.purchaseValue', {
+                    value: formatCurrencyValue(
+                      controller.purchaseValue,
+                      controller.settings.fiatCurrency,
+                    ),
+                  })}
+                </p>
+              ) : null}
+              {controller.purchaseValue === null && controller.isPurchaseValueLoading ? (
+                <p className="text-[0.78rem] text-fg-muted" role="status">
+                  {t('settings.purchaseValueLoading')}
+                </p>
+              ) : null}
 
               <Button
                 className="h-11 rounded-[0.75rem] bg-brand-primary text-[1rem] font-semibold text-fg-on-brand disabled:opacity-40"

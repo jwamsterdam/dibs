@@ -4,12 +4,13 @@ import type { ReactElement, ReactNode } from 'react';
 import { createTestQueryClient } from '@/shared/test/renderWithProviders';
 import { usePortfolioSettingsController } from './usePortfolioSettingsController';
 import { indexedDbPortfolioConfigRepository } from '../data/portfolioConfigRepository';
-import { getCoinGeckoTopCoins } from '../data/coingeckoClient';
+import { getCoinGeckoHistoricalPrice, getCoinGeckoTopCoins } from '../data/coingeckoClient';
 import type { PortfolioSettingsConfig } from '../types/settings';
 
 jest.mock('../data/portfolioConfigRepository');
 jest.mock('../data/coingeckoClient', () => ({
   ...jest.requireActual('../data/coingeckoClient'),
+  getCoinGeckoHistoricalPrice: jest.fn(),
   getCoinGeckoTopCoins: jest.fn(),
 }));
 
@@ -38,6 +39,7 @@ describe('usePortfolioSettingsController', () => {
     jest.mocked(indexedDbPortfolioConfigRepository.loadSettings).mockResolvedValue(initialSettings);
     jest.mocked(indexedDbPortfolioConfigRepository.saveSettings).mockResolvedValue(undefined);
     jest.mocked(getCoinGeckoTopCoins).mockResolvedValue([bitcoinResult]);
+    jest.mocked(getCoinGeckoHistoricalPrice).mockResolvedValue(50_000);
   });
 
   afterEach(() => {
@@ -84,6 +86,42 @@ describe('usePortfolioSettingsController', () => {
 
     act(() => result.current.setAmount('0,5'));
     await waitFor(() => expect(result.current.canAddHolding).toBe(true));
+  });
+
+  it('previews the purchase value once a coin, date, and amount are set', async () => {
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.settings).toEqual(initialSettings));
+
+    act(() => result.current.setQuery('bi'));
+    await waitFor(() => expect(result.current.searchResults).toEqual([bitcoinResult]));
+    act(() => result.current.selectCoinByKey('bitcoin'));
+    act(() => result.current.setAmount('0.5'));
+
+    await waitFor(() => expect(result.current.purchaseValue).toBe(25_000));
+    expect(getCoinGeckoHistoricalPrice).toHaveBeenCalledWith(
+      'bitcoin',
+      'eur',
+      result.current.purchasedAt,
+    );
+  });
+
+  it('persists the fetched purchase price with the new holding', async () => {
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.settings).toEqual(initialSettings));
+
+    act(() => result.current.setQuery('bi'));
+    await waitFor(() => expect(result.current.searchResults).toEqual([bitcoinResult]));
+    act(() => result.current.selectCoinByKey('bitcoin'));
+    act(() => result.current.setAmount('0.5'));
+    await waitFor(() => expect(result.current.purchaseValue).toBe(25_000));
+
+    await act(() => result.current.addHolding());
+
+    expect(indexedDbPortfolioConfigRepository.saveSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        holdings: [expect.objectContaining({ purchasePrice: 50_000 })],
+      }),
+    );
   });
 
   it('rejects a zero or non-numeric amount', async () => {

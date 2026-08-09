@@ -35,6 +35,8 @@
     "currency": "Valuta",
     "amount": "Aantal",
     "purchasedAt": "Aankoop",
+    "purchaseValue": "Aankoopwaarde: {{value}}",
+    "purchaseValueLoading": "Aankoopwaarde ophalen...",
     "addHolding": "Voeg coin toe",
     "removeHolding": "Verwijder {{symbol}}"
   }

@@ -35,6 +35,8 @@
     "currency": "Currency",
     "amount": "Amount",
     "purchasedAt": "Purchased",
+    "purchaseValue": "Purchase value: {{value}}",
+    "purchaseValueLoading": "Fetching purchase value...",
     "addHolding": "Add coin",
     "removeHolding": "Remove {{symbol}}"
   }

@@ -22,9 +22,11 @@ describe('SettingsPanel', () => {
       amount: '0.42',
       canAddHolding: true,
       currencies: ['eur', 'usd', 'gbp', 'chf'],
+      isPurchaseValueLoading: false,
       isSaving: false,
       isSearching: false,
       purchasedAt: '2026-01-10',
+      purchaseValue: null,
       query: 'Bitcoin (BTC)',
       removeHolding: jest.fn(),
       saveError: false,
@@ -110,6 +112,22 @@ describe('SettingsPanel', () => {
 
     expect(screen.getByText('Saving')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Ethereum/ })).not.toBeInTheDocument();
+  });
+
+  it('previews the fetched purchase value', () => {
+    mockController = { ...mockController, purchaseValue: 12_345 };
+
+    renderWithProviders(<SettingsPanel onClose={jest.fn()} />);
+
+    expect(screen.getByText(/Purchase value: €.?12.345/)).toBeInTheDocument();
+  });
+
+  it('shows a loading state while the purchase value is being fetched', () => {
+    mockController = { ...mockController, isPurchaseValueLoading: true, purchaseValue: null };
+
+    renderWithProviders(<SettingsPanel onClose={jest.fn()} />);
+
+    expect(screen.getByText('Fetching purchase value...')).toBeInTheDocument();
   });
 
   it('renders the save error state', () => {

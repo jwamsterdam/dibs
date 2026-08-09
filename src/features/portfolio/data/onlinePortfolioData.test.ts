@@ -219,6 +219,87 @@ describe('onlinePortfolioData', () => {
     ).toBe(6_400);
   });
 
+  it('uses the stored purchase price for a straight-line ALL series, unlike the estimated 1Y series', async () => {
+    const snapshot = await buildOnlinePortfolioSnapshot(
+      {
+        fiatCurrency: 'eur',
+        holdings: [
+          {
+            amount: 1,
+            coinGeckoId: 'bitcoin',
+            id: 'btc-1',
+            name: 'Bitcoin',
+            purchasePrice: 20_000,
+            purchasedAt: '2024-01-15',
+            symbol: 'BTC',
+          },
+        ],
+        personName: 'JW',
+      },
+      now,
+    );
+
+    const series = snapshot.marketSeries.find((item) => item.assetId === 'btc-1');
+    const allPoints = series?.prices.ALL ?? [];
+    const oneYearPoints = series?.prices['1Y'] ?? [];
+
+    expect(allPoints[0]?.value).toBe(20_000);
+    expect(allPoints.at(-1)?.value).toBeCloseTo(62_000);
+    expect(allPoints[0]?.value).not.toBe(oneYearPoints[0]?.value);
+  });
+
+  it('keeps ALL identical to 1Y for a legacy holding with no stored purchase price', async () => {
+    const snapshot = await buildOnlinePortfolioSnapshot(
+      {
+        fiatCurrency: 'eur',
+        holdings: [
+          {
+            amount: 1,
+            coinGeckoId: 'bitcoin',
+            id: 'btc-1',
+            name: 'Bitcoin',
+            purchasedAt: '2024-01-15',
+            symbol: 'BTC',
+          },
+        ],
+        personName: 'JW',
+      },
+      now,
+    );
+
+    const series = snapshot.marketSeries.find((item) => item.assetId === 'btc-1');
+    expect(series?.prices.ALL).toEqual(series?.prices['1Y']);
+  });
+
+  it('uses the stored purchase price as the first sample once the purchase date binds the window', async () => {
+    const snapshot = await buildOnlinePortfolioSnapshot(
+      {
+        fiatCurrency: 'eur',
+        holdings: [
+          {
+            amount: 2,
+            coinGeckoId: 'bitcoin',
+            id: 'btc-1',
+            name: 'Bitcoin',
+            purchasePrice: 55_000,
+            // 14 days before `now` — further back than 1W, but more recent than 1M's own
+            // ~30-day window, so the purchase date (not the period) bounds "1M" here.
+            purchasedAt: '2026-07-25',
+            symbol: 'BTC',
+          },
+        ],
+        personName: 'JW',
+      },
+      now,
+    );
+
+    const monthPoints = snapshot.marketSeries.find((item) => item.assetId === 'btc-1')?.prices[
+      '1M'
+    ];
+
+    expect(monthPoints?.[0]?.value).toBe(110_000);
+  });
+
   it('covers the remaining period starts used by online ranges', () => {
     expect(getPeriodStartDate('1D', now).getDate()).toBe(7);
     expect(getPeriodStartDate('1M', now).getMonth()).toBe(6);

@@ -29,6 +29,17 @@ const marketChartResponseSchema = z.object({
   prices: z.array(z.tuple([z.number(), z.number()])),
 });
 
+// A historical snapshot never changes, so it's cached far longer than live chart data.
+const historicalPriceCacheTtlMs = 400 * 24 * 60 * 60 * 1_000;
+
+const historicalPriceResponseSchema = z.object({
+  market_data: z
+    .object({
+      current_price: z.record(z.string(), z.number()),
+    })
+    .optional(),
+});
+
 export type CoinGeckoChartPoint = {
   readonly timestamp: number;
   readonly price: number;
@@ -112,4 +123,40 @@ export async function getCoinGeckoMarketChart(
   );
 
   return response.prices.map(([timestamp, price]) => ({ timestamp, price }));
+}
+
+function toCoinGeckoHistoryDate(isoDate: string): string {
+  const [year, month, day] = isoDate.split('-');
+  return `${day}-${month}-${year}`;
+}
+
+/**
+ * The price of a coin on one specific past date — used once, when a holding is added, to record
+ * what the user actually paid. Also subject to the Demo API's 365-day history limit (there's no
+ * endpoint that escapes it), which is why the settings form only lets you pick a purchase date
+ * within that range in the first place.
+ */
+export async function getCoinGeckoHistoricalPrice(
+  coinId: string,
+  currency: PortfolioFiatCurrency,
+  date: string,
+): Promise<number | null> {
+  try {
+    const response = await getCachedOrFetch(
+      `history:${coinId}:${date}`,
+      historicalPriceCacheTtlMs,
+      historicalPriceResponseSchema,
+      () =>
+        apiGet(
+          buildUrl(`/coins/${coinId}/history`, {
+            date: toCoinGeckoHistoryDate(date),
+            localization: 'false',
+          }),
+          historicalPriceResponseSchema,
+        ),
+    );
+    return response.market_data?.current_price[currency] ?? null;
+  } catch {
+    return null;
+  }
 }

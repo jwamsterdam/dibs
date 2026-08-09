@@ -23,7 +23,7 @@ const sampleCount = 7;
 // (error 10012, "Public API users are limited to querying historical data within the past
 // 365 days"), so a purchase date beyond that gets clamped rather than sent straight to the
 // API — otherwise the whole request 401s and the holding falls back to a flat/zero series.
-const coinGeckoMaxHistoryDays = 364;
+export const coinGeckoMaxHistoryDays = 364;
 // Covers the "1D" tab with margin; the daily bucket below covers everything longer.
 const recentBucketDays = 2;
 
@@ -72,6 +72,17 @@ export function getEffectivePeriodStart(
   const purchaseDate = new Date(`${purchasedAt}T00:00:00.000Z`);
   const effectiveStart = purchaseDate > periodStart ? purchaseDate : periodStart;
   return clampToCoinGeckoHistoryLimit(effectiveStart, now);
+}
+
+/** Whether the purchase date — not the period's own window — is what bounds this period's chart. */
+function isPurchaseBindingConstraint(
+  period: PortfolioPeriod,
+  purchasedAt: string,
+  now: Date,
+): boolean {
+  const periodStart = getPeriodStartDate(period, now);
+  const purchaseDate = new Date(`${purchasedAt}T00:00:00.000Z`);
+  return purchaseDate > periodStart;
 }
 
 const currencyCodesByFiatCurrency: Record<
@@ -179,18 +190,57 @@ async function fetchCoinCharts(
   return { recent, history };
 }
 
+/**
+ * ALL has no window of its own (its "start" is always the purchase date), so once the real
+ * purchase price is known it doesn't need a chart at all: a straight line from what was paid to
+ * what it's worth now. That sidesteps the 365-day API limit entirely instead of clamping to it.
+ */
+function buildAllTimePoints(
+  holding: PortfolioHoldingConfig,
+  purchasePrice: number,
+  currentPrice: number,
+  now: Date,
+): readonly PricePoint[] {
+  const purchaseDate = new Date(`${holding.purchasedAt}T00:00:00.000Z`);
+  const startValue = purchasePrice * holding.amount;
+  const endValue = currentPrice * holding.amount;
+  const sampleTimes = createSampleTimes(purchaseDate, now);
+
+  return sampleTimes.map((timestamp, index) => ({
+    timestamp: new Date(timestamp).toISOString(),
+    value: startValue + (endValue - startValue) * (index / (sampleTimes.length - 1)),
+  }));
+}
+
 function buildPricePointsForPeriod(
   holding: PortfolioHoldingConfig,
   charts: CoinCharts,
   period: PortfolioPeriod,
   now: Date,
 ): readonly PricePoint[] {
+  if (period === 'ALL' && holding.purchasePrice !== undefined) {
+    const currentPrice = findNearestPrice(charts.recent, now.getTime());
+    return buildAllTimePoints(holding, holding.purchasePrice, currentPrice, now);
+  }
+
   const chart = charts[bucketForPeriod(period)];
   const start = getEffectivePeriodStart(period, holding.purchasedAt, now);
-  return createSampleTimes(start, now).map((timestamp) => ({
-    timestamp: new Date(timestamp).toISOString(),
-    value: findNearestPrice(chart, timestamp) * holding.amount,
-  }));
+  const purchaseIsBinding = isPurchaseBindingConstraint(period, holding.purchasedAt, now);
+
+  return createSampleTimes(start, now).map((timestamp, index) => {
+    // The first sample sits exactly at the purchase date when that's what bounds the window —
+    // use the price actually paid there instead of an estimate read off the chart.
+    if (index === 0 && purchaseIsBinding && holding.purchasePrice !== undefined) {
+      return {
+        timestamp: new Date(timestamp).toISOString(),
+        value: holding.purchasePrice * holding.amount,
+      };
+    }
+    return {
+      timestamp: new Date(timestamp).toISOString(),
+      value: findNearestPrice(chart, timestamp) * holding.amount,
+    };
+  });
 }
 
 function buildTotalPoints(

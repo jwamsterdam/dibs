@@ -1,5 +1,6 @@
 import {
   filterCoinGeckoCoins,
+  getCoinGeckoHistoricalPrice,
   getCoinGeckoMarketChart,
   getCoinGeckoTopCoins,
 } from './coingeckoClient';
@@ -48,6 +49,31 @@ describe('coingeckoClient', () => {
     await expect(
       getCoinGeckoMarketChart('bitcoin', 'eur', 1_722_000_000, 1_722_003_600),
     ).resolves.toEqual([{ price: 62_000, timestamp: 1_722_000_000_000 }]);
+  });
+
+  it('fetches the price on a specific historical date, converted to dd-mm-yyyy', async () => {
+    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          market_data: { current_price: { eur: 41_250, usd: 44_800 } },
+        }),
+      ),
+    );
+
+    await expect(getCoinGeckoHistoricalPrice('bitcoin', 'eur', '2025-08-01')).resolves.toBe(41_250);
+    expect(fetchSpy.mock.calls[0]?.[0]).toContain('date=01-08-2025');
+  });
+
+  it('returns null when the historical price request fails', async () => {
+    jest.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 401 }));
+
+    await expect(getCoinGeckoHistoricalPrice('bitcoin', 'eur', '2020-01-01')).resolves.toBeNull();
+  });
+
+  it('returns null when the coin has no market data for that date', async () => {
+    jest.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({})));
+
+    await expect(getCoinGeckoHistoricalPrice('bitcoin', 'eur', '2025-08-01')).resolves.toBeNull();
   });
 
   describe('filterCoinGeckoCoins', () => {

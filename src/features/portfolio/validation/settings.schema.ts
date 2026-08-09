@@ -10,6 +10,10 @@ export const portfolioHoldingConfigSchema = z.object({
   symbol: z.string().min(1),
   amount: z.number().positive(),
   purchasedAt: z.string().date(),
+  // Fetched once from CoinGecko at add-time and stored, so "since purchase" views (the ALL tab,
+  // and any period whose window is clamped by the purchase date) don't need a fresh historical
+  // lookup — and older holdings persisted before this field existed simply omit it.
+  purchasePrice: z.number().positive().optional(),
 });
 
 export const portfolioSettingsConfigSchema = z.object({

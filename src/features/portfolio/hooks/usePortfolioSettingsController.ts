@@ -4,7 +4,11 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { indexedDbPortfolioConfigRepository } from '../data/portfolioConfigRepository';
-import { filterCoinGeckoCoins, getCoinGeckoTopCoins } from '../data/coingeckoClient';
+import {
+  filterCoinGeckoCoins,
+  getCoinGeckoHistoricalPrice,
+  getCoinGeckoTopCoins,
+} from '../data/coingeckoClient';
 import {
   coinSearchResultSchema,
   portfolioSettingsConfigSchema,
@@ -67,6 +71,8 @@ export type PortfolioSettingsController = {
   readonly selectedCoin: CoinSearchResult | null;
   readonly amount: string;
   readonly purchasedAt: string;
+  readonly purchaseValue: number | null;
+  readonly isPurchaseValueLoading: boolean;
   readonly searchResults: readonly CoinSearchResult[];
   readonly isSearching: boolean;
   readonly isSaving: boolean;
@@ -113,6 +119,25 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
     () => filterCoinGeckoCoins(normalizedQuery, topCoinsQuery.data ?? []),
     [normalizedQuery, topCoinsQuery.data],
   );
+  // Fetched once per (coin, date) and cached indefinitely — a historical price never changes —
+  // so the form can preview the purchase value, and `addHolding` can persist it for later use by
+  // the "since purchase" (ALL) calculation, without re-fetching it on every dashboard load.
+  const purchasePriceQuery = useQuery({
+    enabled: selectedCoin !== null && purchasedAt.length > 0,
+    queryFn: () =>
+      selectedCoin === null
+        ? Promise.resolve(null)
+        : getCoinGeckoHistoricalPrice(selectedCoin.id, settings.fiatCurrency, purchasedAt),
+    queryKey: ['coingecko-history-price', selectedCoin?.id, settings.fiatCurrency, purchasedAt],
+    staleTime: Infinity,
+  });
+  const purchasedAmount = toPositiveAmount(amount);
+  const purchaseValue =
+    purchasePriceQuery.data !== null &&
+    purchasePriceQuery.data !== undefined &&
+    purchasedAmount !== null
+      ? purchasePriceQuery.data * purchasedAmount
+      : null;
   const saveMutation = useMutation({
     mutationFn: (nextSettings: PortfolioSettingsConfig) =>
       indexedDbPortfolioConfigRepository.saveSettings(nextSettings),
@@ -139,6 +164,8 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
     selectedCoin: selectedCoin ?? null,
     amount,
     purchasedAt,
+    purchaseValue,
+    isPurchaseValueLoading: purchasePriceQuery.isLoading,
     searchResults,
     isSearching: normalizedQuery.length >= 2 && topCoinsQuery.isLoading,
     isSaving: saveMutation.isPending,
@@ -179,6 +206,7 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
         symbol: values.selectedCoin.symbol,
         amount,
         purchasedAt: values.purchasedAt,
+        purchasePrice: purchasePriceQuery.data ?? undefined,
       };
       persist({ ...settings, holdings: [...settings.holdings, holding] });
       holdingForm.reset(defaultHoldingFormValues());
