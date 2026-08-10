@@ -124,6 +124,57 @@ describe('usePortfolioSettingsController', () => {
     );
   });
 
+  it('flags a purchase date older than CoinGecko can price and skips the auto-fetch', async () => {
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.settings).toEqual(initialSettings));
+
+    act(() => result.current.setQuery('bi'));
+    await waitFor(() => expect(result.current.searchResults).toEqual([bitcoinResult]));
+    act(() => result.current.selectCoinByKey('bitcoin'));
+    jest.mocked(getCoinGeckoHistoricalPrice).mockClear();
+    act(() => result.current.setPurchasedAt('2020-08-09'));
+
+    await waitFor(() => expect(result.current.isPurchaseDateOutOfApiRange).toBe(true));
+    expect(getCoinGeckoHistoricalPrice).not.toHaveBeenCalled();
+    expect(result.current.canAddHolding).toBe(false);
+  });
+
+  it('computes the purchase value from a manually entered price when out of range', async () => {
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.settings).toEqual(initialSettings));
+
+    act(() => result.current.setQuery('bi'));
+    await waitFor(() => expect(result.current.searchResults).toEqual([bitcoinResult]));
+    act(() => result.current.selectCoinByKey('bitcoin'));
+    act(() => result.current.setPurchasedAt('2020-08-09'));
+    act(() => result.current.setAmount('2'));
+    act(() => result.current.setManualPurchasePrice('9000'));
+
+    await waitFor(() => expect(result.current.purchaseValue).toBe(18_000));
+    await waitFor(() => expect(result.current.canAddHolding).toBe(true));
+  });
+
+  it('persists the manually entered price, not an auto-fetched one, for an out-of-range date', async () => {
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.settings).toEqual(initialSettings));
+
+    act(() => result.current.setQuery('bi'));
+    await waitFor(() => expect(result.current.searchResults).toEqual([bitcoinResult]));
+    act(() => result.current.selectCoinByKey('bitcoin'));
+    act(() => result.current.setPurchasedAt('2020-08-09'));
+    act(() => result.current.setAmount('2'));
+    act(() => result.current.setManualPurchasePrice('9000'));
+    await waitFor(() => expect(result.current.canAddHolding).toBe(true));
+
+    await act(() => result.current.addHolding());
+
+    expect(indexedDbPortfolioConfigRepository.saveSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        holdings: [expect.objectContaining({ purchasePrice: 9_000, purchasedAt: '2020-08-09' })],
+      }),
+    );
+  });
+
   it('rejects a zero or non-numeric amount', async () => {
     const { result } = renderController();
     await waitFor(() => expect(result.current.settings).toEqual(initialSettings));

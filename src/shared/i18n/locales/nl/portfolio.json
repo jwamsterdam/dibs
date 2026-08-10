@@ -37,6 +37,8 @@
     "purchasedAt": "Aankoop",
     "purchaseValue": "Aankoopwaarde: {{value}}",
     "purchaseValueLoading": "Aankoopwaarde ophalen...",
+    "manualPurchasePrice": "Aankoopkoers",
+    "manualPurchasePriceHint": "CoinGecko heeft geen koersdata verder dan 365 dagen terug — vul de aankoopkoers handmatig in.",
     "addHolding": "Voeg coin toe",
     "removeHolding": "Verwijder {{symbol}}"
   }

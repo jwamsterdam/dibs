@@ -1,4 +1,4 @@
-import { getLocalTimeZone, parseDate, today } from '@internationalized/date';
+import { parseDate } from '@internationalized/date';
 import { useTranslation } from 'react-i18next';
 import {
   ComboBox,
@@ -35,7 +35,6 @@ import {
 import { Input, Label, TextField } from 'react-aria-components/TextField';
 import { Button } from '@/shared/components/Button/Button';
 import { focusFieldBorderClassName, focusWithinFieldBorderClassName } from '@/shared/lib/cn';
-import { coinGeckoMaxHistoryDays } from '../data/onlinePortfolioData';
 import { usePortfolioSettingsController } from '../hooks/usePortfolioSettingsController';
 
 type SettingsPanelProps = {
@@ -55,8 +54,6 @@ function formatCurrencyValue(value: number, currency: string): string {
 export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Element {
   const controller = usePortfolioSettingsController();
   const { t } = useTranslation('portfolio');
-  // CoinGecko's free tier can't price a date further back than this, so it's not offered.
-  const minPurchaseDate = today(getLocalTimeZone()).subtract({ days: coinGeckoMaxHistoryDays });
 
   return (
     <ModalOverlay
@@ -186,7 +183,6 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
                 </TextField>
                 <DatePicker
                   className="grid gap-2 text-[0.82rem] font-medium text-fg-muted"
-                  minValue={minPurchaseDate}
                   onChange={(date) => controller.setPurchasedAt(date ? date.toString() : '')}
                   value={controller.purchasedAt ? parseDate(controller.purchasedAt) : null}
                 >
@@ -289,6 +285,24 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
                 </DatePicker>
               </div>
 
+              {controller.isPurchaseDateOutOfApiRange ? (
+                <div className="grid gap-2">
+                  <p className="text-[0.78rem] text-fg-muted">
+                    {t('settings.manualPurchasePriceHint')}
+                  </p>
+                  <TextField className="grid gap-2 text-[0.82rem] font-medium text-fg-muted">
+                    <Label>{t('settings.manualPurchasePrice')}</Label>
+                    <Input
+                      className={`h-11 w-full min-w-0 ${fieldRadiusClassName} border border-[var(--color-border-subtle)] bg-bg-primary px-3 text-[1rem] text-fg-primary ${focusFieldBorderClassName}`}
+                      inputMode="decimal"
+                      onChange={(event) => controller.setManualPurchasePrice(event.target.value)}
+                      placeholder="0,00"
+                      value={controller.manualPurchasePrice}
+                    />
+                  </TextField>
+                </div>
+              ) : null}
+
               {controller.purchaseValue !== null ? (
                 <p className="text-[0.78rem] text-fg-muted" role="status">
                   {t('settings.purchaseValue', {
@@ -299,7 +313,9 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
                   })}
                 </p>
               ) : null}
-              {controller.purchaseValue === null && controller.isPurchaseValueLoading ? (
+              {controller.purchaseValue === null &&
+              !controller.isPurchaseDateOutOfApiRange &&
+              controller.isPurchaseValueLoading ? (
                 <p className="text-[0.78rem] text-fg-muted" role="status">
                   {t('settings.purchaseValueLoading')}
                 </p>

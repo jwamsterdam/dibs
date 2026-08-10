@@ -22,9 +22,11 @@ describe('SettingsPanel', () => {
       amount: '0.42',
       canAddHolding: true,
       currencies: ['eur', 'usd', 'gbp', 'chf'],
+      isPurchaseDateOutOfApiRange: false,
       isPurchaseValueLoading: false,
       isSaving: false,
       isSearching: false,
+      manualPurchasePrice: '',
       purchasedAt: '2026-01-10',
       purchaseValue: null,
       query: 'Bitcoin (BTC)',
@@ -45,6 +47,7 @@ describe('SettingsPanel', () => {
         symbol: 'BTC',
       },
       setAmount: jest.fn(),
+      setManualPurchasePrice: jest.fn(),
       setPurchasedAt: jest.fn(),
       setQuery: jest.fn(),
       settings: {
@@ -128,6 +131,32 @@ describe('SettingsPanel', () => {
     renderWithProviders(<SettingsPanel onClose={jest.fn()} />);
 
     expect(screen.getByText('Fetching purchase value...')).toBeInTheDocument();
+  });
+
+  it('asks for a manual purchase price when the date is outside CoinGecko range', () => {
+    mockController = { ...mockController, isPurchaseDateOutOfApiRange: true };
+
+    renderWithProviders(<SettingsPanel onClose={jest.fn()} />);
+
+    expect(screen.getByText(/CoinGecko has no price data older than 365 days/)).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Purchase price' })).toBeInTheDocument();
+  });
+
+  it('wires the manual purchase price input', async () => {
+    mockController = { ...mockController, isPurchaseDateOutOfApiRange: true };
+    renderWithProviders(<SettingsPanel onClose={jest.fn()} />);
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Purchase price' }), {
+      target: { value: '40000' },
+    });
+
+    expect(mockController.setManualPurchasePrice).toHaveBeenCalledWith('40000');
+  });
+
+  it('does not show the manual purchase price field within CoinGecko range', () => {
+    renderWithProviders(<SettingsPanel onClose={jest.fn()} />);
+
+    expect(screen.queryByRole('textbox', { name: 'Purchase price' })).not.toBeInTheDocument();
   });
 
   it('renders the save error state', () => {

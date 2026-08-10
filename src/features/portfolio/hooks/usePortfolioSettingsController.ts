@@ -9,6 +9,7 @@ import {
   getCoinGeckoHistoricalPrice,
   getCoinGeckoTopCoins,
 } from '../data/coingeckoClient';
+import { coinGeckoMaxHistoryDays } from '../data/onlinePortfolioData';
 import {
   coinSearchResultSchema,
   portfolioSettingsConfigSchema,
@@ -43,11 +44,19 @@ function createHoldingId(coinId: string): string {
   return `${coinId}-${globalThis.crypto.randomUUID()}`;
 }
 
+/** CoinGecko's free tier can't price a date older than this — see {@link onlinePortfolioData}. */
+function isPurchasedAtOutOfApiRange(purchasedAt: string): boolean {
+  const earliestAllowed = new Date();
+  earliestAllowed.setDate(earliestAllowed.getDate() - coinGeckoMaxHistoryDays);
+  return new Date(`${purchasedAt}T00:00:00.000Z`) < earliestAllowed;
+}
+
 const holdingFormSchema = z
   .object({
     selectedCoin: coinSearchResultSchema.nullable(),
     amount: z.string(),
     purchasedAt: z.string().date(),
+    manualPurchasePrice: z.string(),
   })
   .refine((value) => value.selectedCoin !== null, {
     message: 'Coin is required',
@@ -56,12 +65,26 @@ const holdingFormSchema = z
   .refine((value) => toPositiveAmount(value.amount) !== null, {
     message: 'Amount must be positive',
     path: ['amount'],
-  });
+  })
+  .refine(
+    (value) =>
+      !isPurchasedAtOutOfApiRange(value.purchasedAt) ||
+      toPositiveAmount(value.manualPurchasePrice) !== null,
+    {
+      message: 'Purchase price is required for dates CoinGecko cannot price',
+      path: ['manualPurchasePrice'],
+    },
+  );
 
 export type HoldingFormValues = z.infer<typeof holdingFormSchema>;
 
 function defaultHoldingFormValues(): HoldingFormValues {
-  return { selectedCoin: null, amount: '', purchasedAt: todayInputValue() };
+  return {
+    selectedCoin: null,
+    amount: '',
+    manualPurchasePrice: '',
+    purchasedAt: todayInputValue(),
+  };
 }
 
 export type PortfolioSettingsController = {
@@ -71,6 +94,8 @@ export type PortfolioSettingsController = {
   readonly selectedCoin: CoinSearchResult | null;
   readonly amount: string;
   readonly purchasedAt: string;
+  readonly isPurchaseDateOutOfApiRange: boolean;
+  readonly manualPurchasePrice: string;
   readonly purchaseValue: number | null;
   readonly isPurchaseValueLoading: boolean;
   readonly searchResults: readonly CoinSearchResult[];
@@ -81,6 +106,7 @@ export type PortfolioSettingsController = {
   readonly setQuery: (query: string) => void;
   readonly setAmount: (amount: string) => void;
   readonly setPurchasedAt: (purchasedAt: string) => void;
+  readonly setManualPurchasePrice: (manualPurchasePrice: string) => void;
   readonly selectCoinByKey: (key: SelectionKey | null) => void;
   readonly selectCurrencyByKey: (key: SelectionKey | null) => void;
   readonly addHolding: () => Promise<void>;
@@ -100,6 +126,11 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
   const selectedCoin = useWatch({ control: holdingForm.control, name: 'selectedCoin' });
   const amount = useWatch({ control: holdingForm.control, name: 'amount' });
   const purchasedAt = useWatch({ control: holdingForm.control, name: 'purchasedAt' });
+  const manualPurchasePrice = useWatch({
+    control: holdingForm.control,
+    name: 'manualPurchasePrice',
+  });
+  const isPurchaseDateOutOfApiRange = isPurchasedAtOutOfApiRange(purchasedAt);
 
   const settingsQuery = useQuery({
     queryFn: () => indexedDbPortfolioConfigRepository.loadSettings(),
@@ -122,8 +153,10 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
   // Fetched once per (coin, date) and cached indefinitely — a historical price never changes —
   // so the form can preview the purchase value, and `addHolding` can persist it for later use by
   // the "since purchase" (ALL) calculation, without re-fetching it on every dashboard load.
+  // Only runs when the date is within CoinGecko's range — outside it, the request would just
+  // 401, so the form asks for the price directly instead (see `manualPurchasePrice`).
   const purchasePriceQuery = useQuery({
-    enabled: selectedCoin !== null && purchasedAt.length > 0,
+    enabled: selectedCoin !== null && purchasedAt.length > 0 && !isPurchaseDateOutOfApiRange,
     queryFn: () =>
       selectedCoin === null
         ? Promise.resolve(null)
@@ -132,11 +165,12 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
     staleTime: Infinity,
   });
   const purchasedAmount = toPositiveAmount(amount);
+  const effectivePurchasePrice = isPurchaseDateOutOfApiRange
+    ? toPositiveAmount(manualPurchasePrice)
+    : (purchasePriceQuery.data ?? null);
   const purchaseValue =
-    purchasePriceQuery.data !== null &&
-    purchasePriceQuery.data !== undefined &&
-    purchasedAmount !== null
-      ? purchasePriceQuery.data * purchasedAmount
+    effectivePurchasePrice !== null && purchasedAmount !== null
+      ? effectivePurchasePrice * purchasedAmount
       : null;
   const saveMutation = useMutation({
     mutationFn: (nextSettings: PortfolioSettingsConfig) =>
@@ -164,6 +198,8 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
     selectedCoin: selectedCoin ?? null,
     amount,
     purchasedAt,
+    isPurchaseDateOutOfApiRange,
+    manualPurchasePrice,
     purchaseValue,
     isPurchaseValueLoading: purchasePriceQuery.isLoading,
     searchResults,
@@ -180,6 +216,9 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
     },
     setPurchasedAt: (purchasedAt): void => {
       holdingForm.setValue('purchasedAt', purchasedAt, { shouldValidate: true });
+    },
+    setManualPurchasePrice: (manualPurchasePrice): void => {
+      holdingForm.setValue('manualPurchasePrice', manualPurchasePrice, { shouldValidate: true });
     },
     selectCoinByKey: (key): void => {
       const coin = searchResults.find((item) => item.id === key);
@@ -199,6 +238,10 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
         return;
       }
 
+      const purchasePrice = isPurchasedAtOutOfApiRange(values.purchasedAt)
+        ? (toPositiveAmount(values.manualPurchasePrice) ?? undefined)
+        : (purchasePriceQuery.data ?? undefined);
+
       const holding: PortfolioHoldingConfig = {
         id: createHoldingId(values.selectedCoin.id),
         coinGeckoId: values.selectedCoin.id,
@@ -206,7 +249,7 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
         symbol: values.selectedCoin.symbol,
         amount,
         purchasedAt: values.purchasedAt,
-        purchasePrice: purchasePriceQuery.data ?? undefined,
+        purchasePrice,
       };
       persist({ ...settings, holdings: [...settings.holdings, holding] });
       holdingForm.reset(defaultHoldingFormValues());
