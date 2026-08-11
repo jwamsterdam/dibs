@@ -57,20 +57,62 @@ describe('PortfolioPage', () => {
 
     expect(totalChange).toHaveTextContent(/\+€\s?11\.746/);
   });
-  it('maps chart points to the active period labels', () => {
+  it('formats each chart point label from its real timestamp, at the active period granularity', () => {
     expect(
       toChartPoints(
         [
-          { timestamp: '1W-0', value: 100 },
-          { timestamp: '1W-1', value: 120 },
-          { timestamp: '1W-2', value: 140 },
+          { timestamp: '2026-01-15T00:00:00.000Z', value: 100 },
+          { timestamp: '2026-06-15T00:00:00.000Z', value: 120 },
+          { timestamp: '2026-08-10T00:00:00.000Z', value: 140 },
         ],
-        ['ma', 'di', 'wo'],
+        'YTD',
       ),
     ).toEqual([
-      { label: 'ma', value: 100 },
-      { label: 'di', value: 120 },
-      { label: 'wo', value: 140 },
+      { label: 'jan', value: 100 },
+      { label: 'jun', value: 120 },
+      { label: 'aug', value: 140 },
+    ]);
+  });
+
+  it('disambiguates the two ends of a 1Y axis that would otherwise share a month name', () => {
+    const labels = toChartPoints(
+      [
+        { timestamp: '2025-08-10T00:00:00.000Z', value: 100 },
+        { timestamp: '2026-08-10T00:00:00.000Z', value: 140 },
+      ],
+      '1Y',
+    ).map((point) => point.label);
+
+    expect(new Set(labels).size).toBe(2);
+  });
+
+  it('picks a finer ALL granularity for a holding bought only weeks ago', () => {
+    expect(
+      toChartPoints(
+        [
+          { timestamp: '2026-07-20T00:00:00.000Z', value: 100 },
+          { timestamp: '2026-08-10T00:00:00.000Z', value: 140 },
+        ],
+        'ALL',
+      ),
+    ).toEqual([
+      { label: '20 jul', value: 100 },
+      { label: '10 aug', value: 140 },
+    ]);
+  });
+
+  it('falls back to year-only ALL labels for a multi-year holding', () => {
+    expect(
+      toChartPoints(
+        [
+          { timestamp: '2021-08-10T00:00:00.000Z', value: 100 },
+          { timestamp: '2026-08-10T00:00:00.000Z', value: 140 },
+        ],
+        'ALL',
+      ),
+    ).toEqual([
+      { label: '2021', value: 100 },
+      { label: '2026', value: 140 },
     ]);
   });
 });

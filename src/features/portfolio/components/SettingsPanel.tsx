@@ -321,21 +321,35 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
                 </p>
               ) : null}
 
-              <Button
-                className="h-11 rounded-[0.75rem] bg-brand-primary text-[1rem] font-semibold text-fg-on-brand disabled:opacity-40"
-                isDisabled={!controller.canAddHolding}
-                onPress={() => {
-                  void controller.addHolding();
-                }}
-              >
-                {t('settings.addHolding')}
-              </Button>
+              <div className="grid grid-cols-[1fr_auto] gap-3">
+                <Button
+                  className="h-11 rounded-[0.75rem] bg-brand-primary text-[1rem] font-semibold text-fg-on-brand disabled:opacity-40"
+                  isDisabled={!controller.canAddHolding}
+                  onPress={() => {
+                    void controller.addHolding();
+                  }}
+                >
+                  {controller.editingHoldingId === null
+                    ? t('settings.addHolding')
+                    : t('settings.updateHolding')}
+                </Button>
+                {controller.editingHoldingId !== null ? (
+                  <Button
+                    className="h-11 rounded-[0.75rem] px-4 text-[1rem] font-semibold"
+                    onPress={controller.cancelEditHolding}
+                    variant="secondary"
+                  >
+                    {t('settings.cancelEdit')}
+                  </Button>
+                ) : null}
+              </div>
             </fieldset>
 
             <ul className="border-t border-[var(--color-border-strong)]">
               {controller.settings.holdings.map((holding) => (
                 <li
-                  className="grid min-h-[3.25rem] grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-[var(--color-border-subtle)]"
+                  className="grid min-h-[3.25rem] grid-cols-[1fr_auto_auto_auto] items-center gap-3 border-b border-[var(--color-border-subtle)] data-[editing]:bg-bg-secondary"
+                  data-editing={holding.id === controller.editingHoldingId ? '' : undefined}
                   key={holding.id}
                 >
                   <span className="min-w-0">
@@ -347,6 +361,14 @@ export function SettingsPanel({ onClose }: SettingsPanelProps): React.JSX.Elemen
                     </span>
                   </span>
                   <span className="text-[0.78rem] text-fg-muted">{holding.name}</span>
+                  <Button
+                    aria-label={t('settings.editHolding', { symbol: holding.symbol })}
+                    className="min-h-9 min-w-9 rounded-full p-0 text-[1.05rem]"
+                    onPress={() => controller.startEditHolding(holding.id)}
+                    variant="secondary"
+                  >
+                    {'✎'}
+                  </Button>
                   <Button
                     aria-label={t('settings.removeHolding', { symbol: holding.symbol })}
                     className="min-h-9 min-w-9 rounded-full p-0 text-[1.2rem] text-loss"

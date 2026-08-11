@@ -6,16 +6,6 @@
     "toggleChange": "Wissel verandering voor {{asset}}",
     "chart": "{{asset}} grafiek"
   },
-  "chart": {
-    "labels": {
-      "1D": ["09:00", "11:00", "13:00", "15:00", "17:00", "19:00", "21:00"],
-      "1W": ["ma", "di", "wo", "do", "vr", "za", "zo"],
-      "1M": ["week 1", "week 2", "week 3", "week 4", "week 5", "week 6", "nu"],
-      "YTD": ["jan", "feb", "mrt", "apr", "mei", "jun", "nu"],
-      "1Y": ["aug", "okt", "dec", "feb", "apr", "jun", "nu"],
-      "ALL": ["2020", "2021", "2022", "2023", "2024", "2025", "nu"]
-    }
-  },
   "rewards": {
     "ethStakingRewards": "ETH staking rewards"
   },
@@ -40,6 +30,9 @@
     "manualPurchasePrice": "Aankoopkoers",
     "manualPurchasePriceHint": "CoinGecko heeft geen koersdata verder dan 365 dagen terug — vul de aankoopkoers handmatig in.",
     "addHolding": "Voeg coin toe",
+    "updateHolding": "Wijzig coin",
+    "cancelEdit": "Annuleren",
+    "editHolding": "Wijzig {{symbol}}",
     "removeHolding": "Verwijder {{symbol}}"
   }
 }

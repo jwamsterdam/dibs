@@ -2,6 +2,7 @@ import { screen } from '@testing-library/react';
 import { renderWithProviders } from '@/shared/test/renderWithProviders';
 import {
   formatAxisCurrency,
+  getColorStops,
   getTimelineTicks,
   getValueDomain,
   getValueTicks,
@@ -93,5 +94,60 @@ describe('PortfolioChart', () => {
 
   it('keeps the value axis to three calm reference ticks', () => {
     expect(getValueTicks([24_000, 28_000])).toEqual([24_000, 26_000, 28_000]);
+  });
+
+  it('returns no color stops for an empty series', () => {
+    expect(getColorStops([])).toEqual([]);
+  });
+
+  it('colors a single-point series by comparing it to itself', () => {
+    expect(getColorStops([{ label: 'Now', value: 100 }])).toEqual([
+      { color: 'var(--color-gain)', offset: 0 },
+      { color: 'var(--color-gain)', offset: 1 },
+    ]);
+  });
+
+  it('colors a series that stays above its start value entirely green', () => {
+    const stops = getColorStops([
+      { label: 'Start', value: 100 },
+      { label: 'Middle', value: 110 },
+      { label: 'End', value: 120 },
+    ]);
+
+    expect(stops.every((stop) => stop.color === 'var(--color-gain)')).toBe(true);
+  });
+
+  it('colors a series that drops below its start value red', () => {
+    const stops = getColorStops([
+      { label: 'Start', value: 100 },
+      { label: 'Middle', value: 90 },
+      { label: 'End', value: 80 },
+    ]);
+
+    // The first point equals the start value itself, so the >= rule classifies it gain — the
+    // boundary, not a drop — and the crossing to red lands right at offset 0 as a result.
+    expect(stops).toEqual([
+      { color: 'var(--color-gain)', offset: 0 },
+      { color: 'var(--color-gain)', offset: 0 },
+      { color: 'var(--color-loss)', offset: 0 },
+      { color: 'var(--color-loss)', offset: 0.5 },
+      { color: 'var(--color-loss)', offset: 1 },
+    ]);
+  });
+
+  it('inserts a hard color edge at the point where the series crosses its start value', () => {
+    const stops = getColorStops([
+      { label: 'Start', value: 100 },
+      { label: 'Above', value: 120 },
+      { label: 'Below', value: 80 },
+    ]);
+
+    expect(stops).toEqual([
+      { color: 'var(--color-gain)', offset: 0 },
+      { color: 'var(--color-gain)', offset: 0.5 },
+      { color: 'var(--color-gain)', offset: 0.75 },
+      { color: 'var(--color-loss)', offset: 0.75 },
+      { color: 'var(--color-loss)', offset: 1 },
+    ]);
   });
 });

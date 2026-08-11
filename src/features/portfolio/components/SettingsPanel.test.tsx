@@ -20,8 +20,10 @@ describe('SettingsPanel', () => {
     mockController = {
       addHolding: jest.fn(),
       amount: '0.42',
+      cancelEditHolding: jest.fn(),
       canAddHolding: true,
       currencies: ['eur', 'usd', 'gbp', 'chf'],
+      editingHoldingId: null,
       isPurchaseDateOutOfApiRange: false,
       isPurchaseValueLoading: false,
       isSaving: false,
@@ -50,6 +52,7 @@ describe('SettingsPanel', () => {
       setManualPurchasePrice: jest.fn(),
       setPurchasedAt: jest.fn(),
       setQuery: jest.fn(),
+      startEditHolding: jest.fn(),
       settings: {
         fiatCurrency: 'eur',
         holdings: [
@@ -91,6 +94,26 @@ describe('SettingsPanel', () => {
     expect(mockController.addHolding).toHaveBeenCalledTimes(1);
     expect(mockController.removeHolding).toHaveBeenCalledWith('holding-1');
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('wires the edit action and shows update/cancel controls while editing', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<SettingsPanel onClose={jest.fn()} />);
+
+    await user.click(screen.getByRole('button', { name: 'Edit BTC' }));
+    expect(mockController.startEditHolding).toHaveBeenCalledWith('holding-1');
+
+    mockController = { ...mockController, editingHoldingId: 'holding-1' };
+    renderWithProviders(<SettingsPanel onClose={jest.fn()} />);
+
+    const updateButton = screen.getByRole('button', { name: 'Update coin' });
+    const cancelButton = screen.getByRole('button', { name: 'Cancel' });
+
+    await user.click(updateButton);
+    expect(mockController.addHolding).toHaveBeenCalledTimes(1);
+
+    await user.click(cancelButton);
+    expect(mockController.cancelEditHolding).toHaveBeenCalledTimes(1);
   });
 
   it('wires coin autocomplete selection', async () => {

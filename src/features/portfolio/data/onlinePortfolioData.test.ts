@@ -80,10 +80,10 @@ describe('onlinePortfolioData', () => {
     expect(snapshot.people[0]?.assets[0]?.amount).toBe(0.5);
     expect(
       snapshot.marketSeries.find((series) => series.assetId === 'btc-1')?.prices['1W'],
-    ).toHaveLength(7);
+    ).toHaveLength(60);
     expect(
       snapshot.marketSeries.find((series) => series.assetId === 'btc-1')?.prices['1D'],
-    ).toHaveLength(7);
+    ).toHaveLength(60);
     expect(
       snapshot.marketSeries.find((series) => series.assetId === 'total')?.prices['1W'][0]?.value,
     ).toBe(30_000);

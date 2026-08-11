@@ -1,4 +1,4 @@
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from 'recharts';
 import type { PortfolioFiatCurrencyCode } from '../types/portfolio';
 
 type PortfolioChartProps = {
@@ -103,6 +103,76 @@ export function getValueTicks(
   return [minimumDomain, middleTick, maximumDomain];
 }
 
+export type ChartColorStop = {
+  readonly offset: number;
+  readonly color: string;
+};
+
+const gainColor = 'var(--color-gain)';
+const lossColor = 'var(--color-loss)';
+
+function colorForValue(value: number, startValue: number): string {
+  return value >= startValue ? gainColor : lossColor;
+}
+
+/**
+ * Splits the line/area into green/red segments based on each point's value relative to the
+ * series' *starting* value — not tick-to-tick direction — matching how CoinMarketCap-style
+ * charts color a period's move. Points are assumed evenly spaced along x (the chart uses a
+ * category axis), so a point's x-offset is just its index over the last index. Where the sign
+ * flips between two points, a linearly-interpolated crossing offset gets a hard color edge
+ * instead of the color switching exactly at the point index, so the flip lines up with where the
+ * line actually crosses the start value.
+ */
+export function getColorStops(points: readonly ChartPoint[]): readonly ChartColorStop[] {
+  if (points.length === 0) {
+    return [];
+  }
+
+  const startValue = points[0]?.value ?? 0;
+  const lastIndex = points.length - 1;
+
+  if (lastIndex === 0) {
+    const soleColor = colorForValue(points[0]?.value ?? startValue, startValue);
+    return [
+      { color: soleColor, offset: 0 },
+      { color: soleColor, offset: 1 },
+    ];
+  }
+
+  const stops: ChartColorStop[] = [];
+  let previousColor = colorForValue(points[0]?.value ?? startValue, startValue);
+  stops.push({ color: previousColor, offset: 0 });
+
+  for (let index = 1; index <= lastIndex; index += 1) {
+    const point = points[index];
+    if (point === undefined) {
+      continue;
+    }
+
+    const currentOffset = index / lastIndex;
+    const currentColor = colorForValue(point.value, startValue);
+
+    if (currentColor !== previousColor) {
+      const previousPoint = points[index - 1];
+      const previousValue = previousPoint?.value ?? startValue;
+      const previousOffset = (index - 1) / lastIndex;
+      const valueDelta = point.value - previousValue;
+      const crossingFraction =
+        valueDelta === 0 ? 0 : Math.min(Math.max((startValue - previousValue) / valueDelta, 0), 1);
+      const crossingOffset = previousOffset + crossingFraction * (currentOffset - previousOffset);
+
+      stops.push({ color: previousColor, offset: crossingOffset });
+      stops.push({ color: currentColor, offset: crossingOffset });
+    }
+
+    stops.push({ color: currentColor, offset: currentOffset });
+    previousColor = currentColor;
+  }
+
+  return stops;
+}
+
 export function PortfolioChart({
   ariaLabel,
   points,
@@ -112,6 +182,8 @@ export function PortfolioChart({
   const valueDomain = getValueDomain(points);
   const valueTicks = getValueTicks(valueDomain);
   const tickStep = valueTicks[1] - valueTicks[0];
+  const colorStops = getColorStops(points);
+  const startValue = points[0]?.value ?? valueDomain[0];
 
   return (
     <section aria-label={ariaLabel} className="h-[13.6rem]">
@@ -123,9 +195,17 @@ export function PortfolioChart({
         style={{ height: '100%', width: '100%' }}
       >
         <defs>
-          <linearGradient id="portfolio-chart-fill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="var(--color-chart-fill)" stopOpacity={1} />
-            <stop offset="100%" stopColor="var(--color-chart-fill)" stopOpacity={1} />
+          <linearGradient id="portfolio-chart-stroke" x1="0" x2="1" y1="0" y2="0">
+            {colorStops.map((stop, index) => (
+              // Consecutive stops can share both offset and color (a crossing landing exactly
+              // on a point), so the array index is the only reliably unique key here.
+              <stop key={index} offset={stop.offset} stopColor={stop.color} />
+            ))}
+          </linearGradient>
+          <linearGradient id="portfolio-chart-fill" x1="0" x2="1" y1="0" y2="0">
+            {colorStops.map((stop, index) => (
+              <stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity={0.16} />
+            ))}
           </linearGradient>
         </defs>
         <CartesianGrid
@@ -156,13 +236,19 @@ export function PortfolioChart({
           tickLine={false}
           tickMargin={7}
         />
+        <ReferenceLine
+          stroke="var(--color-chart-axis)"
+          strokeDasharray="3 3"
+          strokeOpacity={0.6}
+          y={startValue}
+        />
         <Area
           animationDuration={220}
-          baseValue={valueDomain[0]}
+          baseValue={startValue}
           dataKey="value"
           fill="url(#portfolio-chart-fill)"
           isAnimationActive
-          stroke="var(--color-brand-primary)"
+          stroke="url(#portfolio-chart-stroke)"
           strokeLinejoin="round"
           strokeWidth={2.15}
           type="monotone"

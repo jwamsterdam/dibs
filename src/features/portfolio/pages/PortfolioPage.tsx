@@ -9,7 +9,47 @@ import { type ChartPoint, PortfolioChart } from '../components/PortfolioChart';
 import { RewardsRow } from '../components/RewardsRow';
 import type { PortfolioFiatCurrencyCode, PortfolioPeriod, PricePoint } from '../types/portfolio';
 
-type ChartLabelsByPeriod = Record<PortfolioPeriod, readonly string[]>;
+const dayMs = 24 * 60 * 60 * 1_000;
+
+// Chart x-axis granularity per period — each point carries its own real timestamp (see
+// onlinePortfolioData.ts), so the label just needs to pick how much of that date to show.
+// Each period's window is exactly long enough that its first and last sample can otherwise
+// land on the same clock time / weekday / month (1D spans exactly 24h, 1W exactly 7 days, 1Y
+// exactly 12 months), so those three include one extra field purely to keep the two ends of
+// the axis from rendering identical labels.
+const chartLabelFormatOptionsByPeriod: Record<
+  Exclude<PortfolioPeriod, 'ALL'>,
+  Intl.DateTimeFormatOptions
+> = {
+  '1D': { hour: '2-digit', minute: '2-digit', weekday: 'short' },
+  '1M': { day: 'numeric', month: 'short' },
+  '1W': { day: 'numeric', weekday: 'short' },
+  '1Y': { month: 'short', year: '2-digit' },
+  YTD: { month: 'short' },
+};
+
+/**
+ * ALL has no fixed-length window (it always starts at the purchase date, see
+ * onlinePortfolioData.ts), so unlike the other periods its real span can be anywhere from a few
+ * days to several years — the granularity has to be picked from the actual data instead of
+ * being hardcoded per period.
+ */
+function getAllPeriodFormatOptions(points: readonly PricePoint[]): Intl.DateTimeFormatOptions {
+  const firstPoint = points[0];
+  const lastPoint = points.at(-1);
+  if (firstPoint === undefined || lastPoint === undefined) {
+    return { year: 'numeric' };
+  }
+
+  const spanMs = new Date(lastPoint.timestamp).getTime() - new Date(firstPoint.timestamp).getTime();
+  if (spanMs < 60 * dayMs) {
+    return { day: 'numeric', month: 'short' };
+  }
+  if (spanMs < 2 * 365 * dayMs) {
+    return { month: 'short', year: '2-digit' };
+  }
+  return { year: 'numeric' };
+}
 
 function useFormatters(): {
   readonly formatAmount: (value: number) => string;
@@ -54,10 +94,13 @@ function useFormatters(): {
 
 export function toChartPoints(
   points: readonly PricePoint[],
-  fallbackLabels: readonly string[],
+  period: PortfolioPeriod,
 ): readonly ChartPoint[] {
-  return points.map((point, index) => ({
-    label: fallbackLabels[index] ?? point.timestamp,
+  const formatOptions =
+    period === 'ALL' ? getAllPeriodFormatOptions(points) : chartLabelFormatOptionsByPeriod[period];
+  const formatter = new Intl.DateTimeFormat('nl-NL', formatOptions);
+  return points.map((point) => ({
+    label: formatter.format(new Date(point.timestamp)),
     value: point.value,
   }));
 }
@@ -66,11 +109,7 @@ export function PortfolioPage(): React.JSX.Element {
   const controller = usePortfolioController();
   const { t } = useTranslation('portfolio');
   const { formatAmount, formatCurrency, formatChange, formatPercent } = useFormatters();
-  const chartLabelsByPeriod = t('chart.labels', { returnObjects: true }) as ChartLabelsByPeriod;
-  const chartPoints = toChartPoints(
-    controller.chartPoints,
-    chartLabelsByPeriod[controller.selectedPeriod],
-  );
+  const chartPoints = toChartPoints(controller.chartPoints, controller.selectedPeriod);
 
   return (
     <main className="h-[100svh] overflow-hidden bg-bg-primary px-[1.35rem] pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] text-fg-primary">

@@ -103,6 +103,7 @@ export type PortfolioSettingsController = {
   readonly isSaving: boolean;
   readonly saveError: boolean;
   readonly canAddHolding: boolean;
+  readonly editingHoldingId: string | null;
   readonly setQuery: (query: string) => void;
   readonly setAmount: (amount: string) => void;
   readonly setPurchasedAt: (purchasedAt: string) => void;
@@ -111,12 +112,15 @@ export type PortfolioSettingsController = {
   readonly selectCurrencyByKey: (key: SelectionKey | null) => void;
   readonly addHolding: () => Promise<void>;
   readonly removeHolding: (holdingId: string) => void;
+  readonly startEditHolding: (holdingId: string) => void;
+  readonly cancelEditHolding: () => void;
 };
 
 export function usePortfolioSettingsController(): PortfolioSettingsController {
   const queryClient = useQueryClient();
   const [draftSettings, setDraftSettings] = useState<PortfolioSettingsConfig | null>(null);
   const [query, setQuery] = useState('');
+  const [editingHoldingId, setEditingHoldingId] = useState<string | null>(null);
 
   const holdingForm = useForm<HoldingFormValues>({
     defaultValues: defaultHoldingFormValues(),
@@ -207,6 +211,7 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
     isSaving: saveMutation.isPending,
     saveError: saveMutation.isError,
     canAddHolding: holdingForm.formState.isValid,
+    editingHoldingId,
     setQuery: (nextQuery): void => {
       setQuery(nextQuery);
       holdingForm.setValue('selectedCoin', null, { shouldValidate: true });
@@ -243,7 +248,7 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
         : (purchasePriceQuery.data ?? undefined);
 
       const holding: PortfolioHoldingConfig = {
-        id: createHoldingId(values.selectedCoin.id),
+        id: editingHoldingId ?? createHoldingId(values.selectedCoin.id),
         coinGeckoId: values.selectedCoin.id,
         name: values.selectedCoin.name,
         symbol: values.selectedCoin.symbol,
@@ -251,11 +256,48 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
         purchasedAt: values.purchasedAt,
         purchasePrice,
       };
-      persist({ ...settings, holdings: [...settings.holdings, holding] });
+      const nextHoldings =
+        editingHoldingId === null
+          ? [...settings.holdings, holding]
+          : settings.holdings.map((item) => (item.id === editingHoldingId ? holding : item));
+      persist({ ...settings, holdings: nextHoldings });
       holdingForm.reset(defaultHoldingFormValues());
       setQuery('');
+      setEditingHoldingId(null);
     }),
+    startEditHolding: (holdingId): void => {
+      const holding = settings.holdings.find((item) => item.id === holdingId);
+      if (holding === undefined) {
+        return;
+      }
+      const coin: CoinSearchResult = {
+        id: holding.coinGeckoId,
+        name: holding.name,
+        symbol: holding.symbol,
+      };
+      setEditingHoldingId(holdingId);
+      setQuery(`${coin.name} (${coin.symbol})`);
+      holdingForm.reset({
+        amount: String(holding.amount),
+        manualPurchasePrice: isPurchasedAtOutOfApiRange(holding.purchasedAt)
+          ? String(holding.purchasePrice ?? '')
+          : '',
+        purchasedAt: holding.purchasedAt,
+        selectedCoin: coin,
+      });
+      void holdingForm.trigger();
+    },
+    cancelEditHolding: (): void => {
+      setEditingHoldingId(null);
+      holdingForm.reset(defaultHoldingFormValues());
+      setQuery('');
+    },
     removeHolding: (holdingId): void => {
+      if (holdingId === editingHoldingId) {
+        setEditingHoldingId(null);
+        holdingForm.reset(defaultHoldingFormValues());
+        setQuery('');
+      }
       persist({
         ...settings,
         holdings: settings.holdings.filter((holding) => holding.id !== holdingId),

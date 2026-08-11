@@ -18,7 +18,11 @@ import {
   type CoinGeckoChartPoint,
 } from './coingeckoClient';
 
-const sampleCount = 7;
+// Higher than the underlying data's real resolution for the shorter periods (daily, since
+// `history` below is a single shared fetch — see fetchCoinCharts), but it's free: no extra
+// API calls, and it makes the longer periods (which do have that much daily data) render a
+// noticeably smoother line instead of a blocky 7-point zigzag.
+const sampleCount = 60;
 // CoinGecko's public API rejects `market_chart/range` requests older than 365 days
 // (error 10012, "Public API users are limited to querying historical data within the past
 // 365 days"), so a purchase date beyond that gets clamped rather than sent straight to the

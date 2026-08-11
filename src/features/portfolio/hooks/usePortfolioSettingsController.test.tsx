@@ -237,6 +237,71 @@ describe('usePortfolioSettingsController', () => {
     );
   });
 
+  it('prefills the form for an existing holding and updates it in place on submit', async () => {
+    jest.mocked(indexedDbPortfolioConfigRepository.loadSettings).mockResolvedValue({
+      ...initialSettings,
+      holdings: [
+        {
+          amount: 1,
+          coinGeckoId: 'bitcoin',
+          id: 'holding-1',
+          name: 'Bitcoin',
+          purchasedAt: '2026-01-01',
+          symbol: 'BTC',
+        },
+      ],
+    });
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.settings.holdings).toHaveLength(1));
+
+    act(() => result.current.startEditHolding('holding-1'));
+
+    await waitFor(() => expect(result.current.selectedCoin).toEqual(bitcoinResult));
+    expect(result.current.amount).toBe('1');
+    expect(result.current.purchasedAt).toBe('2026-01-01');
+    expect(result.current.editingHoldingId).toBe('holding-1');
+    await waitFor(() => expect(result.current.canAddHolding).toBe(true));
+
+    act(() => result.current.setAmount('2.5'));
+    await waitFor(() => expect(result.current.canAddHolding).toBe(true));
+
+    await act(() => result.current.addHolding());
+
+    expect(indexedDbPortfolioConfigRepository.saveSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        holdings: [expect.objectContaining({ id: 'holding-1', amount: 2.5 })],
+      }),
+    );
+    expect(result.current.editingHoldingId).toBeNull();
+  });
+
+  it('clears an in-progress edit when cancelled', async () => {
+    jest.mocked(indexedDbPortfolioConfigRepository.loadSettings).mockResolvedValue({
+      ...initialSettings,
+      holdings: [
+        {
+          amount: 1,
+          coinGeckoId: 'bitcoin',
+          id: 'holding-1',
+          name: 'Bitcoin',
+          purchasedAt: '2026-01-01',
+          symbol: 'BTC',
+        },
+      ],
+    });
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.settings.holdings).toHaveLength(1));
+
+    act(() => result.current.startEditHolding('holding-1'));
+    await waitFor(() => expect(result.current.editingHoldingId).toBe('holding-1'));
+
+    act(() => result.current.cancelEditHolding());
+
+    expect(result.current.editingHoldingId).toBeNull();
+    expect(result.current.selectedCoin).toBeNull();
+    expect(result.current.query).toBe('');
+  });
+
   it('persists the selected fiat currency', async () => {
     const { result } = renderController();
     await waitFor(() => expect(result.current.settings).toEqual(initialSettings));
