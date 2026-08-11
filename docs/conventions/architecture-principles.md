@@ -2,7 +2,7 @@
 
 Applies **Clean Architecture** to our feature-based React app. This is the _how_; the
 [Technical Architecture Plan](../Technical-Architecture-Plan.md) is the _what & why_. Any
-deviation requires an ADR approved by the Solution Architect.
+deviation requires an ADR (see [git & pull requests](git-and-pull-requests.md)).
 
 ## The dependency rule
 
@@ -10,14 +10,14 @@ Dependencies point **inward**, toward stable domain logic. The framework, router
 live at the **edges**; business rules do not depend on them.
 
 ```
-Pages / Components  →  Hooks (use cases)  →  API layer  →  Domain types (Zod)
-   (React, router)      (orchestration)      (generated)    (pure, framework-free)
+Pages / Components  →  Hooks (use cases)  →  Data layer  →  Domain types (Zod)
+   (React, router)      (orchestration)      (fetch/query)  (pure, framework-free)
         outer  ────────────────────────────────────────────────►  inner
 ```
 
 - Inner layers know **nothing** about outer ones. Domain types never import React.
-- A component may call a hook; a hook may call the API layer; the API layer returns domain types.
-  Never the reverse.
+- A component may call a hook; a hook may call the data layer; the data layer returns domain
+  types. Never the reverse.
 
 ## Layers & responsibilities
 
@@ -26,7 +26,7 @@ Pages / Components  →  Hooks (use cases)  →  API layer  →  Domain types (Z
 | **Pages**             | Route entry; compose hooks + components. Ultra-thin.       | Contain business logic or fetch data   |
 | **Components**        | Render props; emit events. Presentational.                 | Fetch, validate, or hold app state     |
 | **Hooks / use cases** | Orchestrate queries, mutations, validation, derived state. | Render JSX; know about routes' details |
-| **API layer**         | Generated TanStack Query hooks + thin feature wrappers.    | Be hand-edited (`src/api/` is codegen) |
+| **Data layer**        | `fetch` clients + TanStack Query, parsed at the boundary.  | Be called directly from components     |
 | **Domain types**      | Zod schemas + inferred TS types; the shared vocabulary.    | Import React/router/network            |
 
 ## Feature slices & boundaries
@@ -40,21 +40,20 @@ Pages / Components  →  Hooks (use cases)  →  API layer  →  Domain types (Z
 
 ## "Where does X go?"
 
-| You have…                                   | It goes in…                                       |
-| ------------------------------------------- | ------------------------------------------------- |
-| Logic used by 2+ features                   | `shared/` (lib / hooks / components)              |
-| Logic used by one feature                   | that feature's slice                              |
-| A pure helper (no React)                    | `shared/lib/` or the feature's `lib`              |
-| A Zod schema / domain type                  | `validation/` + `types/` in the slice             |
-| A call to the backend                       | the generated hook, wrapped in the slice's `api/` |
-| Cross-cutting UI (Button, ConnectionStatus) | `shared/components/`                              |
+| You have…                                   | It goes in…                                     |
+| ------------------------------------------- | ----------------------------------------------- |
+| Logic used by 2+ features                   | `shared/` (lib / hooks / components)            |
+| Logic used by one feature                   | that feature's slice                            |
+| A pure helper (no React)                    | `shared/lib/` or the feature's `lib`            |
+| A Zod schema / domain type                  | `validation/` + `types/` in the slice           |
+| A call to an external API                   | the feature's `data/` client, wrapped in a hook |
+| Cross-cutting UI (Button, ConnectionStatus) | `shared/components/`                            |
 
 ## State placement (the decision tree)
 
 | Data source                      | Home                                         |
 | -------------------------------- | -------------------------------------------- |
-| Server data (REST)               | TanStack Query                               |
-| WebSocket event                  | `useWebSocket` → Jotai atom                  |
+| Server/external data             | TanStack Query                               |
 | Form input                       | React Hook Form (never a global store)       |
 | UI state (sidebar, selected tab) | Jotai atom, local to the feature             |
 | Navigation / filter parameters   | TanStack Router search params (URL is state) |
@@ -67,6 +66,6 @@ global store.
 
 - Put decisions and rules in **hooks and pure functions**, not inside component bodies, so they
   can be tested without rendering.
-- Depend on the **generated types**, not on hand-copied shapes — the contract is the boundary.
-- If a design forces an inward dependency (e.g. domain logic needing the router), that is a smell —
-  raise it with Solid; it usually means the responsibility is in the wrong layer.
+- Depend on the **Zod-inferred types**, not on hand-copied shapes — the schema is the boundary.
+- If a design forces an inward dependency (e.g. domain logic needing the router), that is a smell
+  — it usually means the responsibility is in the wrong layer.

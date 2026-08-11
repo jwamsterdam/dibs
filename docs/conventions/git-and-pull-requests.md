@@ -32,18 +32,7 @@ How change flows into `main`. Extends [`AGENTS.md`](../../AGENTS.md).
 - [ ] Loading / empty / error / permission states implemented
 - [ ] No `any` / `!` / `@ts-ignore`; no hardcoded colours or strings
 - [ ] Accessibility checked (roles, focus, contrast, `jest-axe`)
-- [ ] Storybook story added/updated for shared components
 - [ ] ADR added if an architectural decision or deviation is involved
-
-## Review flow
-
-Per the working method in [`AGENTS.md`](../../AGENTS.md): **Solid** (architecture) → **Pixel**
-(design/a11y) → **Aegis** (security-sensitive) → **Watt** (perf-sensitive) → **human** approval.
-AI teammates propose; humans dispose.
-
-**Which** virtual reviewers are required depends on the change type — follow the review routing
-matrix in [`docs/delivery-workflow.md`](../delivery-workflow.md). Declare the change type in the
-PR template so the right reviewers run; don't have every agent review every change.
 
 ## When an ADR is required
 

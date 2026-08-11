@@ -1,6 +1,6 @@
 # Design Notes
 
-Design-fidelity findings and proposed Figma extensions, owned by **Pixel** (UX Guardian).
+Design-fidelity findings and proposed Figma extensions.
 
 Use this folder to record deviations from Figma, missing UI states, responsive-variant
 decisions, and reusable-pattern proposals — anything that needs customer review before it

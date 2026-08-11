@@ -18,7 +18,7 @@ Small, local implementation choices do **not** need an ADR.
 
 1. Copy [`template.md`](template.md) to `NNNN-short-title.md` (zero-padded, next number).
 2. Fill in Context, Decision, Consequences, and Alternatives considered.
-3. Open a PR. **Solid** (Solution Architect agent) reviews; a **human architect** approves.
+3. Open a PR; a **human architect** approves.
 4. ADRs are immutable once `Accepted`. To change a decision, add a new ADR that supersedes it
    (link both ways) rather than editing history.
 

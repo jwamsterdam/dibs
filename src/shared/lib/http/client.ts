@@ -1,12 +1,8 @@
 import type { ZodType, ZodTypeDef } from 'zod';
 
 /**
- * Minimal typed HTTP client — the interim data seam. Feature `api/` layers call these
- * and validate every response with Zod at the boundary.
- *
- * NOTE: this stands in for the generated TanStack Query hooks. Once the customer's
- * OpenAPI spec is available, `npm run generate:api` produces `src/api/rest/`, and feature
- * `api/` files wrap those generated hooks instead of calling this client directly.
+ * Minimal typed HTTP client — every feature data layer calls these and validates the
+ * response with Zod at the boundary. See `docs/conventions/api-integration.md`.
  */
 export class ApiError extends Error {
   constructor(

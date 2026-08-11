@@ -1,14 +1,13 @@
 # UI, Styling & Internationalisation
 
-Owned by **Pixel**; followed by everyone building UI. Extends [`AGENTS.md`](../../AGENTS.md).
+Extends [`AGENTS.md`](../../AGENTS.md).
 
 ## Components
 
-- **Untitled UI first.** Use the design-system component before building anything custom.
-  Wrap it in `shared/components/` when the app needs a consistent, constrained variant.
-- Never re-implement a component that exists in the design system.
-- Every shared component has a Storybook story covering its variants and states — the story is
-  the contract that Pixel checks against Figma.
+- Prefer `react-aria-components` primitives (per ADR-0004) over hand-rolled interactive
+  elements — they come with accessibility behaviour built in.
+- Shared, reusable UI lives in `shared/components/`; never re-implement something that's
+  already there.
 
 ## Styling — tokens only
 
@@ -25,7 +24,7 @@ Owned by **Pixel**; followed by everyone building UI. Extends [`AGENTS.md`](../.
 - The active theme is a Jotai atom persisted to `localStorage`; the provider sets
   `data-theme` on the root element.
 - New components must work in all three themes automatically because they use tokens — verify
-  in Storybook / the status page rather than assuming.
+  by switching themes in the running app rather than assuming.
 
 ## Responsive
 

@@ -85,5 +85,4 @@ jobs:
         run: npm run check:audit
 # Follow-ups (need external setup, tracked in the conventions/README enforcement notes):
 #   - SonarCloud Quality Gate  → add a job with the SonarSource action + SONAR_TOKEN secret
-#   - Cypress E2E (nightly + release branches) → separate workflow once cypress.config is added
 #   - Lighthouse CI (@lhci/cli) → perf-budget job once the dependency is approved

@@ -22,8 +22,10 @@ npm run check:bundle
 
 ## Future Data Contracts
 
-Dibs has no backend in the MVP. If future CoinGecko, Beacon, or app-owned APIs are added,
-keep generated clients under `src/api/` and wrap them from feature-owned adapters.
+Dibs has no backend in the MVP. CoinGecko is already called directly from the client (see
+ADR-0005); future external APIs (e.g. Beacon) should follow the same pattern — a feature-owned
+client wrapping `shared/lib/http/client.ts`, validated with Zod at the boundary. See
+[`docs/conventions/api-integration.md`](conventions/api-integration.md).
 
 ## Release Notes
 

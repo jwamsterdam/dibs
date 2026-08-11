@@ -11,7 +11,6 @@ citable instruction rather than a hope.
 | [`AGENTS.md`](../../AGENTS.md)                                             | The short list of **absolute, non-negotiable** rules + index |
 | [`docs/Technical-Architecture-Plan.md`](../Technical-Architecture-Plan.md) | The **what & why** of the overall design (stack, structure)  |
 | **This library** (`docs/conventions/`)                                     | The detailed **how** — applied standards with examples       |
-| [`docs/agents/`](../agents/)                                               | Per-role charters that point here                            |
 
 **Single source of truth:** each fact lives in exactly one place. If a convention here ever
 conflicts with `AGENTS.md`, `AGENTS.md` wins — and the conflict is a bug to fix.
@@ -21,8 +20,8 @@ conflicts with `AGENTS.md`, `AGENTS.md` wins — and the conflict is a bug to fi
 - [Coding standards](coding-standards.md) — Clean Code applied to TypeScript + React
 - [Architecture principles](architecture-principles.md) — Clean Architecture applied to feature slices
 - [Testing conventions](testing-conventions.md) — strategy, patterns, coverage
-- [API integration](api-integration.md) — contract-first codegen, generated hooks, Zod boundaries
-- [UI, styling & i18n](ui-styling-and-i18n.md) — Untitled UI, theme tokens, translations, a11y
+- [API integration](api-integration.md) — direct fetch clients, Zod boundaries, mocking
+- [UI, styling & i18n](ui-styling-and-i18n.md) — theme tokens, translations, a11y
 - [Git & pull requests](git-and-pull-requests.md) — commits, PR size, review flow
 
 ## Enforcement (gates, not prose)
@@ -37,7 +36,7 @@ and in CI. These are not suggestions:
 | No dependency cycles          | `import/no-cycle` (with the TS path resolver)                                                      |
 | No `dangerouslySetInnerHTML`  | `react/no-danger`                                                                                  |
 | No hardcoded palette colours  | custom `no-restricted-syntax` rule                                                                 |
-| Accessibility                 | `jsx-a11y` recommended (lint) + `jest-axe`/`cypress-axe` (tests)                                   |
+| Accessibility                 | `jsx-a11y` recommended (lint) + `jest-axe` (tests)                                                 |
 | Test quality                  | `eslint-plugin-testing-library` + `eslint-plugin-jest-dom`                                         |
 | Coverage floor                | Jest `coverageThreshold`                                                                           |
 | Bundle budget                 | `npm run check:bundle` (fails over budget)                                                         |

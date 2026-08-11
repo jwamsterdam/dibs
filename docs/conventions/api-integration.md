@@ -1,21 +1,21 @@
 # API Integration
 
-Contract-first. The customer owns the OpenAPI/AsyncAPI specs; we generate typed clients from
-them. Extends [`AGENTS.md`](../../AGENTS.md) and expands the plan's [§4](../Technical-Architecture-Plan.md).
+Extends [`AGENTS.md`](../../AGENTS.md) and expands the plan's [§4](../Technical-Architecture-Plan.md).
 
-## REST (OpenAPI → generated hooks)
+## REST (direct fetch + Zod)
 
-- The spec (`openapi.yaml`) is the source of truth. Run `npm run generate:api` →
-  `src/api/rest/` (`types.gen.ts`, `sdk.gen.ts`). **Never hand-edit `src/api/`** — it is
-  regenerated and your edits will be lost (and lint blocks it).
-- No manual `fetch()` anywhere. Always use the generated TanStack Query hooks.
-- A feature's `api/` folder holds **thin wrappers** that configure the generated hooks
-  (query keys, select, enabled) — not a second data layer.
+- No backend of our own. External APIs (e.g. CoinGecko, per ADR-0005) are called directly
+  from the client via `shared/lib/http/client.ts` (a thin typed `fetch` wrapper), behind a
+  feature-owned data source (e.g. `features/portfolio/data/coingeckoClient.ts`).
+- Every response is parsed with a Zod schema before use — never trust the wire shape.
+- Requests go through TanStack Query (caching, retry, `staleTime`) rather than ad hoc
+  `useEffect` + `fetch`.
 
 ```ts
-// features/market-data/api/usePrices.ts
-export function useZones() {
-  return useGetZonesQuery(undefined, { staleTime: 30_000 });
+// features/portfolio/data/coingeckoClient.ts
+export async function getCoinGeckoTopCoins(): Promise<readonly CoinSearchResult[]> {
+  const data = await apiGet('/coins/markets', { params: { vs_currency: 'eur' } });
+  return coinSearchResultSchema.array().parse(data);
 }
 ```
 
@@ -34,15 +34,6 @@ Every data-driven view handles all of:
 - **Empty** — a deliberate empty state, not a zero-row table with no explanation.
 - **Error** — a recoverable message (with retry where sensible), driven by the query error.
 - **Permission** — what the user sees when they may not act.
-
-## WebSocket (AsyncAPI → events → Jotai)
-
-- Types generated from `asyncapi.yaml` via `npm run generate:ws` → `src/api/ws/`.
-- The socket is created by `shared/lib/ws/client.ts` (factory + exponential-backoff reconnect),
-  consumed via `shared/hooks/useWebSocket`, and its events feed **Jotai atoms** — not the query
-  cache.
-- Connection status (connected / disconnected / reconnecting) is always visible via
-  `<ConnectionStatus>`.
 
 ## Mocking (MSW)
 

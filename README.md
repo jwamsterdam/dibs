@@ -17,7 +17,6 @@ per-person coin and amount configuration.
 - Tailwind CSS through CSS custom-property theme tokens
 - Zod validation at trust boundaries
 - Jest and Testing Library
-- Cypress and Storybook as provided by the template
 
 ## Current MVP Scope
 

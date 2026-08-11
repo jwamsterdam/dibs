@@ -1,17 +1,15 @@
 # Testing Conventions
 
-Owned by **Probe**; followed by everyone. Extends [`AGENTS.md`](../../AGENTS.md).
+Extends [`AGENTS.md`](../../AGENTS.md).
 
 ## Strategy
 
-A pragmatic test pyramid:
-
-- Many unit/component tests with Jest and React Testing Library.
-- Some end-to-end tests with Cypress for key user workflows.
-- MSW only for future network boundaries; local portfolio MVP tests use local data.
-
-Tests are written first: Scope's Gherkin -> Probe's failing tests -> Vibe implements until
-green.
+- Unit/component tests with Jest and React Testing Library, covering hooks, components, and
+  data-layer logic.
+- MSW mocks the external boundary (CoinGecko) so "works in dev" and "works in tests" mean
+  the same thing.
+- Write tests alongside (or before) the implementation — a feature isn't done until its
+  happy, edge, error, and permission paths are covered.
 
 ## Arrange-Act-Assert
 
@@ -34,5 +32,5 @@ it('toggles a portfolio change from absolute to percentage', async () => {
 
 ## Coverage
 
-Targets: >=80% statements/lines, >=75% branches, >=85% functions. Generated `src/api/`
-is excluded.
+Targets: >=80% statements/lines, >=75% branches, >=85% functions (`shared/` + feature
+slices; i18n config, MSW, and test infra are excluded — see `jest.config.cjs`).

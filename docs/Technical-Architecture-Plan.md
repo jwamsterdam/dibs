@@ -36,7 +36,6 @@ Planned future slices:
 - Jotai for local UI state
 - Zod for validation
 - Jest/Testing Library
-- Cypress and Storybook as optional quality surfaces
 
 ## Source Layout
 
@@ -46,7 +45,6 @@ src/
 ├── features/
 │   └── portfolio/
 ├── shared/
-├── api/
 └── styles/
 ```
 
@@ -83,7 +81,6 @@ Recharts is isolated in a `charts` manual chunk and documented in ADR-0002.
 
 - Zod parses portfolio snapshots and future external responses.
 - UI tests cover row selection, period switching, change display mode, and chart rendering.
-- Generated `src/api/` remains reserved for future generated clients and is not hand-edited.
 
 ## Architecture Decisions
 

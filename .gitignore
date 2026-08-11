@@ -16,18 +16,9 @@ stats.html
 # Test & coverage output
 coverage/
 .nyc_output/
-cypress/videos/
-cypress/screenshots/
-cypress/downloads/
 
-# Storybook
-storybook-static/
-
-# Generated API clients (regenerated from OpenAPI/AsyncAPI specs)
-# NOTE: keep committed if the specs are not always available at build time.
-# Uncomment to treat as pure build artifacts:
-# src/api/rest/
-# src/api/ws/
+# graphify knowledge-graph output (local dev tool, not a build artifact)
+graphify-out/
 
 # Logs
 *.log

@@ -4,7 +4,7 @@ Dibs targets an iPhone-first PWA experience. Performance work focuses on fast st
 small bundles, smooth chart interaction, and predictable behavior on mobile-like CPU and
 network throttling.
 
-## What Watt Tracks
+## What's Tracked
 
 - Total JavaScript gzip
 - Largest JavaScript chunk gzip

@@ -2,10 +2,6 @@
 # GitHub auto-requests these reviewers; enable branch protection ("Require review
 # from Code Owners") on main to make them mandatory.
 #
-# Virtual teammates (Vibe, Solid, Probe, …) are NOT GitHub accounts and cannot be
-# listed here — they are invoked in Claude Code / Codex per the review routing matrix
-# in docs/delivery-workflow.md.
-#
 # TODO: replace the placeholder handles below with real GitHub usernames or teams.
 
 # Default owner — Senior Front-end reviews everything.
@@ -26,7 +22,6 @@
 # Requirements & specs — Business Analyst.
 /docs/specs/                @business-analyst
 
-# Agent charters & conventions — Architect (governs how the team works).
+# Conventions — Architect (governs how the team works).
 /AGENTS.md                  @solution-architect
-/docs/agents/               @solution-architect
 /docs/conventions/          @solution-architect @senior-frontend
