@@ -6,9 +6,11 @@ import { indexedDbPortfolioConfigRepository } from '../data/portfolioConfigRepos
 import { mockPortfolioSnapshot } from '../data/mockPortfolioSnapshot';
 import {
   changeDisplayModeAtom,
+  isAccountsOpenAtom,
   isSettingsOpenAtom,
   selectedAssetByPersonAtom,
   selectedPeriodAtom,
+  selectedPersonIdAtom,
 } from '../store/portfolio.atoms';
 import { PORTFOLIO_PERIODS } from '../types/portfolio';
 import type {
@@ -34,8 +36,15 @@ export type PortfolioRow = {
   readonly isTotal: boolean;
 };
 
+export type PortfolioPersonSummary = {
+  readonly id: string;
+  readonly name: string;
+};
+
 export type PortfolioController = {
   readonly personName: string;
+  readonly people: readonly PortfolioPersonSummary[];
+  readonly activePersonIndex: number;
   readonly periods: readonly PortfolioPeriod[];
   readonly selectedPeriod: PortfolioPeriod;
   readonly selectedLabel: string;
@@ -44,14 +53,19 @@ export type PortfolioController = {
   readonly chartPoints: readonly PricePoint[];
   readonly rewardValue: number;
   readonly isSettingsOpen: boolean;
+  readonly isAccountsOpen: boolean;
   readonly isOnlinePortfolio: boolean;
   readonly isOnlineLoading: boolean;
   readonly isOnlineError: boolean;
   readonly changeDisplayMode: ChangeDisplayMode;
   readonly openSettings: () => void;
   readonly closeSettings: () => void;
+  readonly openAccounts: () => void;
+  readonly closeAccounts: () => void;
   readonly selectPeriodByKey: (key: SelectionKey) => void;
   readonly selectAsset: (assetId: string) => void;
+  readonly selectPersonById: (personId: string) => void;
+  readonly selectPersonByIndex: (index: number) => void;
   readonly toggleChangeDisplayMode: () => void;
 };
 
@@ -84,17 +98,32 @@ export function usePortfolioController(): PortfolioController {
   const [selectedAssets, setSelectedAssets] = useAtom(selectedAssetByPersonAtom);
   const [changeDisplayMode, setChangeDisplayMode] = useAtom(changeDisplayModeAtom);
   const [isSettingsOpen, setIsSettingsOpen] = useAtom(isSettingsOpenAtom);
+  const [isAccountsOpen, setIsAccountsOpen] = useAtom(isAccountsOpenAtom);
+  const [selectedPersonId, setSelectedPersonId] = useAtom(selectedPersonIdAtom);
   const settingsQuery = useQuery({
     queryFn: () => indexedDbPortfolioConfigRepository.loadSettings(),
     queryKey: ['portfolio-settings'],
     staleTime: 5_000,
   });
+  // The roster of accounts (id + name only, no chart data) — separate from `snapshot.people`,
+  // which only ever holds the single account currently being viewed (see onlinePortfolioData.ts:
+  // CoinGecko data is fetched lazily, per active person, never for every account at once).
+  const people = useMemo(
+    () =>
+      (settingsQuery.data?.people ?? []).map((person) => ({ id: person.id, name: person.name })),
+    [settingsQuery.data?.people],
+  );
+  const activePersonId = selectedPersonId ?? people[0]?.id ?? null;
+  const activePersonIndex = Math.max(
+    people.findIndex((candidate) => candidate.id === activePersonId),
+    0,
+  );
   // Not keyed by selectedPeriod: the snapshot carries every period's series at once, so
   // switching tabs slices already-fetched data instead of triggering a new CoinGecko call.
   const snapshotQuery = useQuery({
     placeholderData: keepPreviousData,
-    queryFn: () => configuredPortfolioDataSource.getSnapshot(),
-    queryKey: ['portfolio-snapshot', settingsQuery.dataUpdatedAt],
+    queryFn: () => configuredPortfolioDataSource.getSnapshot(activePersonId),
+    queryKey: ['portfolio-snapshot', activePersonId, settingsQuery.dataUpdatedAt],
     staleTime: 30_000,
   });
   const snapshot = snapshotQuery.data ?? mockPortfolioSnapshot;
@@ -134,6 +163,8 @@ export function usePortfolioController(): PortfolioController {
 
   return {
     personName: person.name,
+    people,
+    activePersonIndex,
     fiatCurrency: snapshot.fiatCurrency,
     periods: PORTFOLIO_PERIODS,
     selectedPeriod,
@@ -142,12 +173,15 @@ export function usePortfolioController(): PortfolioController {
     chartPoints: getSeries(snapshot, selectedAsset.id, selectedPeriod),
     rewardValue: demoEthStakingRewardsEur,
     isSettingsOpen,
+    isAccountsOpen,
     isOnlinePortfolio: snapshot.mode === 'online',
     isOnlineLoading: snapshotQuery.isLoading,
     isOnlineError: snapshotQuery.isError,
     changeDisplayMode,
     openSettings: (): void => setIsSettingsOpen(true),
     closeSettings: (): void => setIsSettingsOpen(false),
+    openAccounts: (): void => setIsAccountsOpen(true),
+    closeAccounts: (): void => setIsAccountsOpen(false),
     selectPeriodByKey: (key): void => {
       const nextPeriod = PORTFOLIO_PERIODS.find((period) => period === key);
       if (nextPeriod !== undefined) {
@@ -156,6 +190,15 @@ export function usePortfolioController(): PortfolioController {
     },
     selectAsset: (assetId): void => {
       setSelectedAssets((current) => ({ ...current, [person.id]: assetId }));
+    },
+    selectPersonById: (personId): void => {
+      setSelectedPersonId(personId);
+    },
+    selectPersonByIndex: (index): void => {
+      const target = people[index];
+      if (target !== undefined) {
+        setSelectedPersonId(target.id);
+      }
     },
     toggleChangeDisplayMode: (): void => {
       setChangeDisplayMode((current) => (current === 'absolute' ? 'percentage' : 'absolute'));

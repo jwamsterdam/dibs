@@ -3,6 +3,7 @@
 import type { PortfolioSettingsConfig } from '../types/settings';
 import { portfolioSettingsConfigSchema } from '../validation/settings.schema';
 import { CONFIG_STORE, readStoreEntry, withPortfolioDatabase, writeStoreEntry } from './indexedDb';
+import { migrateLegacyPortfolioConfig } from './migratePortfolioConfig';
 
 const SETTINGS_KEY = 'active-settings';
 
@@ -15,7 +16,9 @@ export const indexedDbPortfolioConfigRepository: PortfolioConfigRepository = {
   async loadSettings(): Promise<PortfolioSettingsConfig | null> {
     return withPortfolioDatabase(async (database) => {
       const result = await readStoreEntry<unknown>(database, CONFIG_STORE, SETTINGS_KEY);
-      return result === undefined ? null : portfolioSettingsConfigSchema.parse(result);
+      return result === undefined
+        ? null
+        : portfolioSettingsConfigSchema.parse(migrateLegacyPortfolioConfig(result));
     }, null);
   },
 

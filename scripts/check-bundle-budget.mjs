@@ -23,7 +23,10 @@ const BUDGETS = {
 // Chunks that only load on a user action (not on every visit), so they don't belong in the
 // first-paint budget even though Vite's chunk graph reaches them via a "dynamic import" edge
 // just like the always-loaded route chunk does. Match by manifest `src` (source module path).
-const DEFERRED_ENTRY_SOURCES = ['src/features/portfolio/components/SettingsPanel.tsx'];
+const DEFERRED_ENTRY_SOURCES = [
+  'src/features/portfolio/components/SettingsPanel.tsx',
+  'src/features/portfolio/components/AccountsPanel.tsx',
+];
 
 function gzipKb(path) {
   return gzipSync(readFileSync(path)).length / 1024;

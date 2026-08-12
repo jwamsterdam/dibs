@@ -10,15 +10,13 @@ import type { PortfolioSnapshot } from '../types/portfolio';
 jest.mock('./onlinePortfolioData');
 jest.mock('./portfolioConfigRepository');
 
-const emptySettings: PortfolioSettingsConfig = {
-  personName: 'JW',
+const noAccountsSettings: PortfolioSettingsConfig = {
   fiatCurrency: 'eur',
-  holdings: [],
+  people: [],
 };
 
-const settingsWithHoldings: PortfolioSettingsConfig = {
-  personName: 'JW',
-  fiatCurrency: 'eur',
+const personA = { holdings: [], id: 'person-a', name: 'JW' };
+const personB = {
   holdings: [
     {
       id: 'btc-1',
@@ -29,10 +27,17 @@ const settingsWithHoldings: PortfolioSettingsConfig = {
       purchasedAt: '2026-01-10',
     },
   ],
+  id: 'person-b',
+  name: 'Jan',
+};
+
+const settingsWithPeople: PortfolioSettingsConfig = {
+  fiatCurrency: 'eur',
+  people: [personA, personB],
 };
 
 const onlineSnapshot: PortfolioSnapshot = {
-  people: [{ id: 'settings-person', name: 'JW', selectedAssetId: 'total', assets: [] }],
+  people: [{ id: 'person-b', name: 'Jan', selectedAssetId: 'total', assets: [] }],
   marketSeries: [],
   fiatCurrency: 'EUR',
   futurePriceProvider: 'coingecko',
@@ -59,30 +64,54 @@ describe('configuredPortfolioDataSource', () => {
   it('falls back to the read-only mock snapshot when no settings are configured', async () => {
     jest.mocked(indexedDbPortfolioConfigRepository.loadSettings).mockResolvedValue(null);
 
-    const snapshot = await configuredPortfolioDataSource.getSnapshot();
+    const snapshot = await configuredPortfolioDataSource.getSnapshot('person-a');
 
     expect(snapshot.mode).toBe('read-only-mock');
     expect(buildOnlinePortfolioSnapshot).not.toHaveBeenCalled();
   });
 
-  it('falls back to the read-only mock snapshot once all holdings are removed', async () => {
-    jest.mocked(indexedDbPortfolioConfigRepository.loadSettings).mockResolvedValue(emptySettings);
-
-    const snapshot = await configuredPortfolioDataSource.getSnapshot();
-
-    expect(snapshot.mode).toBe('read-only-mock');
-    expect(buildOnlinePortfolioSnapshot).not.toHaveBeenCalled();
-  });
-
-  it('builds an online snapshot from persisted settings', async () => {
+  it('falls back to the read-only mock snapshot once every account has been removed', async () => {
     jest
       .mocked(indexedDbPortfolioConfigRepository.loadSettings)
-      .mockResolvedValue(settingsWithHoldings);
+      .mockResolvedValue(noAccountsSettings);
+
+    const snapshot = await configuredPortfolioDataSource.getSnapshot(null);
+
+    expect(snapshot.mode).toBe('read-only-mock');
+    expect(buildOnlinePortfolioSnapshot).not.toHaveBeenCalled();
+  });
+
+  it('builds an online snapshot for the requested active person', async () => {
+    jest
+      .mocked(indexedDbPortfolioConfigRepository.loadSettings)
+      .mockResolvedValue(settingsWithPeople);
     jest.mocked(buildOnlinePortfolioSnapshot).mockResolvedValue(onlineSnapshot);
 
-    const snapshot = await configuredPortfolioDataSource.getSnapshot();
+    const snapshot = await configuredPortfolioDataSource.getSnapshot('person-b');
 
-    expect(buildOnlinePortfolioSnapshot).toHaveBeenCalledWith(settingsWithHoldings);
+    expect(buildOnlinePortfolioSnapshot).toHaveBeenCalledWith(personB, 'eur');
     expect(snapshot).toBe(onlineSnapshot);
+  });
+
+  it('falls back to the first person when the active id is missing or stale', async () => {
+    jest
+      .mocked(indexedDbPortfolioConfigRepository.loadSettings)
+      .mockResolvedValue(settingsWithPeople);
+    jest.mocked(buildOnlinePortfolioSnapshot).mockResolvedValue(onlineSnapshot);
+
+    await configuredPortfolioDataSource.getSnapshot('deleted-person');
+
+    expect(buildOnlinePortfolioSnapshot).toHaveBeenCalledWith(personA, 'eur');
+  });
+
+  it('falls back to the first person when no active id is given', async () => {
+    jest
+      .mocked(indexedDbPortfolioConfigRepository.loadSettings)
+      .mockResolvedValue(settingsWithPeople);
+    jest.mocked(buildOnlinePortfolioSnapshot).mockResolvedValue(onlineSnapshot);
+
+    await configuredPortfolioDataSource.getSnapshot();
+
+    expect(buildOnlinePortfolioSnapshot).toHaveBeenCalledWith(personA, 'eur');
   });
 });

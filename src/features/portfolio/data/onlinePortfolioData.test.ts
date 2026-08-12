@@ -59,7 +59,6 @@ describe('onlinePortfolioData', () => {
   it('builds an online snapshot with every period pre-computed, not just one', async () => {
     const snapshot = await buildOnlinePortfolioSnapshot(
       {
-        fiatCurrency: 'eur',
         holdings: [
           {
             amount: 0.5,
@@ -70,8 +69,10 @@ describe('onlinePortfolioData', () => {
             symbol: 'BTC',
           },
         ],
-        personName: 'JW',
+        id: 'jw',
+        name: 'JW',
       },
+      'eur',
       now,
     );
 
@@ -92,7 +93,6 @@ describe('onlinePortfolioData', () => {
   it('fetches each unique coin only once, even when it is held twice', async () => {
     await buildOnlinePortfolioSnapshot(
       {
-        fiatCurrency: 'eur',
         holdings: [
           {
             amount: 0.3,
@@ -111,8 +111,10 @@ describe('onlinePortfolioData', () => {
             symbol: 'BTC',
           },
         ],
-        personName: 'JW',
+        id: 'jw',
+        name: 'JW',
       },
+      'eur',
       now,
     );
 
@@ -124,7 +126,6 @@ describe('onlinePortfolioData', () => {
   it('rounds the request window to the cache TTL so repeat builds reuse the same cache key', async () => {
     await buildOnlinePortfolioSnapshot(
       {
-        fiatCurrency: 'eur',
         holdings: [
           {
             amount: 0.5,
@@ -135,8 +136,10 @@ describe('onlinePortfolioData', () => {
             symbol: 'BTC',
           },
         ],
-        personName: 'JW',
+        id: 'jw',
+        name: 'JW',
       },
+      'eur',
       now,
     );
 
@@ -151,7 +154,6 @@ describe('onlinePortfolioData', () => {
 
     const snapshot = await buildOnlinePortfolioSnapshot(
       {
-        fiatCurrency: 'eur',
         holdings: [
           {
             amount: 2,
@@ -162,8 +164,10 @@ describe('onlinePortfolioData', () => {
             symbol: 'BTC',
           },
         ],
-        personName: 'JW',
+        id: 'jw',
+        name: 'JW',
       },
+      'eur',
       now,
     );
 
@@ -186,7 +190,6 @@ describe('onlinePortfolioData', () => {
 
     const snapshot = await buildOnlinePortfolioSnapshot(
       {
-        fiatCurrency: 'eur',
         holdings: [
           {
             amount: 0.5,
@@ -205,8 +208,10 @@ describe('onlinePortfolioData', () => {
             symbol: 'ETH',
           },
         ],
-        personName: 'JW',
+        id: 'jw',
+        name: 'JW',
       },
+      'eur',
       now,
     );
 
@@ -222,7 +227,6 @@ describe('onlinePortfolioData', () => {
   it('uses the stored purchase price for a straight-line ALL series, unlike the estimated 1Y series', async () => {
     const snapshot = await buildOnlinePortfolioSnapshot(
       {
-        fiatCurrency: 'eur',
         holdings: [
           {
             amount: 1,
@@ -234,8 +238,10 @@ describe('onlinePortfolioData', () => {
             symbol: 'BTC',
           },
         ],
-        personName: 'JW',
+        id: 'jw',
+        name: 'JW',
       },
+      'eur',
       now,
     );
 
@@ -251,7 +257,6 @@ describe('onlinePortfolioData', () => {
   it('keeps ALL identical to 1Y for a legacy holding with no stored purchase price', async () => {
     const snapshot = await buildOnlinePortfolioSnapshot(
       {
-        fiatCurrency: 'eur',
         holdings: [
           {
             amount: 1,
@@ -262,8 +267,10 @@ describe('onlinePortfolioData', () => {
             symbol: 'BTC',
           },
         ],
-        personName: 'JW',
+        id: 'jw',
+        name: 'JW',
       },
+      'eur',
       now,
     );
 
@@ -274,7 +281,6 @@ describe('onlinePortfolioData', () => {
   it('uses the stored purchase price as the first sample once the purchase date binds the window', async () => {
     const snapshot = await buildOnlinePortfolioSnapshot(
       {
-        fiatCurrency: 'eur',
         holdings: [
           {
             amount: 2,
@@ -288,8 +294,10 @@ describe('onlinePortfolioData', () => {
             symbol: 'BTC',
           },
         ],
-        personName: 'JW',
+        id: 'jw',
+        name: 'JW',
       },
+      'eur',
       now,
     );
 

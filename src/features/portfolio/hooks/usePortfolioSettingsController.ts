@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useAtomValue } from 'jotai';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,6 +11,7 @@ import {
   getCoinGeckoTopCoins,
 } from '../data/coingeckoClient';
 import { coinGeckoMaxHistoryDays } from '../data/onlinePortfolioData';
+import { selectedPersonIdAtom } from '../store/portfolio.atoms';
 import {
   coinSearchResultSchema,
   portfolioSettingsConfigSchema,
@@ -19,16 +21,25 @@ import type {
   CoinSearchResult,
   PortfolioFiatCurrency,
   PortfolioHoldingConfig,
+  PortfolioPersonConfig,
   PortfolioSettingsConfig,
 } from '../types/settings';
 
 type SelectionKey = string | number;
 
-const defaultSettings: PortfolioSettingsConfig = {
-  personName: 'JW',
-  fiatCurrency: 'eur',
-  holdings: [],
+/** The active account's slice of the full multi-account config — what the settings UI needs. */
+export type ScopedPortfolioSettings = {
+  readonly fiatCurrency: PortfolioFiatCurrency;
+  readonly holdings: readonly PortfolioHoldingConfig[];
 };
+
+const defaultConfig: PortfolioSettingsConfig = {
+  fiatCurrency: 'eur',
+  people: [],
+};
+
+/** Name given to an account auto-created the first time a coin is added with no accounts yet. */
+const defaultPersonName = 'JW';
 
 function toPositiveAmount(value: string): number | null {
   const normalizedValue = value.replace(',', '.').trim();
@@ -88,7 +99,7 @@ function defaultHoldingFormValues(): HoldingFormValues {
 }
 
 export type PortfolioSettingsController = {
-  readonly settings: PortfolioSettingsConfig;
+  readonly settings: ScopedPortfolioSettings;
   readonly currencies: readonly PortfolioFiatCurrency[];
   readonly query: string;
   readonly selectedCoin: CoinSearchResult | null;
@@ -118,7 +129,7 @@ export type PortfolioSettingsController = {
 
 export function usePortfolioSettingsController(): PortfolioSettingsController {
   const queryClient = useQueryClient();
-  const [draftSettings, setDraftSettings] = useState<PortfolioSettingsConfig | null>(null);
+  const [draftConfig, setDraftConfig] = useState<PortfolioSettingsConfig | null>(null);
   const [query, setQuery] = useState('');
   const [editingHoldingId, setEditingHoldingId] = useState<string | null>(null);
 
@@ -141,7 +152,14 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
     queryKey: ['portfolio-settings'],
     staleTime: 5_000,
   });
-  const settings = draftSettings ?? settingsQuery.data ?? defaultSettings;
+  const config = draftConfig ?? settingsQuery.data ?? defaultConfig;
+  const selectedPersonId = useAtomValue(selectedPersonIdAtom);
+  const activePersonId = selectedPersonId ?? config.people[0]?.id ?? null;
+  const activePerson = config.people.find((person) => person.id === activePersonId) ?? null;
+  const settings: ScopedPortfolioSettings = {
+    fiatCurrency: config.fiatCurrency,
+    holdings: activePerson?.holdings ?? [],
+  };
   const normalizedQuery = query.trim();
   // Downloaded once (and cached in IndexedDB for a week) so autocomplete filters locally
   // instead of hitting CoinGecko's rate-limited `/search` endpoint on every keystroke.
@@ -184,10 +202,32 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
     },
   });
 
-  function persist(nextSettings: PortfolioSettingsConfig): void {
-    const parsedSettings = portfolioSettingsConfigSchema.parse(nextSettings);
-    setDraftSettings(parsedSettings);
-    saveMutation.mutate(parsedSettings);
+  function persistConfig(nextConfig: PortfolioSettingsConfig): void {
+    const parsedConfig = portfolioSettingsConfigSchema.parse(nextConfig);
+    setDraftConfig(parsedConfig);
+    saveMutation.mutate(parsedConfig);
+  }
+
+  /**
+   * Replaces the active account's holdings and persists the whole config. If there's no
+   * account yet (fresh install, nobody has visited the Accounts panel), auto-creates one —
+   * preserves the zero-setup "just open settings and add a coin" flow.
+   */
+  function persistHoldings(nextHoldings: readonly PortfolioHoldingConfig[]): void {
+    if (activePerson !== null) {
+      const nextPeople = config.people.map((person) =>
+        person.id === activePerson.id ? { ...person, holdings: [...nextHoldings] } : person,
+      );
+      persistConfig({ ...config, people: nextPeople });
+      return;
+    }
+
+    const newPerson: PortfolioPersonConfig = {
+      id: globalThis.crypto.randomUUID(),
+      name: defaultPersonName,
+      holdings: [...nextHoldings],
+    };
+    persistConfig({ ...config, people: [...config.people, newPerson] });
   }
 
   function selectCoin(coin: CoinSearchResult): void {
@@ -234,7 +274,7 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
     selectCurrencyByKey: (key): void => {
       const currency = PORTFOLIO_FIAT_CURRENCIES.find((item) => item === key);
       if (currency !== undefined) {
-        persist({ ...settings, fiatCurrency: currency });
+        persistConfig({ ...config, fiatCurrency: currency });
       }
     },
     addHolding: holdingForm.handleSubmit((values) => {
@@ -260,7 +300,7 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
         editingHoldingId === null
           ? [...settings.holdings, holding]
           : settings.holdings.map((item) => (item.id === editingHoldingId ? holding : item));
-      persist({ ...settings, holdings: nextHoldings });
+      persistHoldings(nextHoldings);
       holdingForm.reset(defaultHoldingFormValues());
       setQuery('');
       setEditingHoldingId(null);
@@ -298,10 +338,7 @@ export function usePortfolioSettingsController(): PortfolioSettingsController {
         holdingForm.reset(defaultHoldingFormValues());
         setQuery('');
       }
-      persist({
-        ...settings,
-        holdings: settings.holdings.filter((holding) => holding.id !== holdingId),
-      });
+      persistHoldings(settings.holdings.filter((holding) => holding.id !== holdingId));
     },
   };
 }

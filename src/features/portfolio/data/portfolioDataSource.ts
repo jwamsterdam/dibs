@@ -4,7 +4,7 @@ import { indexedDbPortfolioConfigRepository } from './portfolioConfigRepository'
 import type { PortfolioSnapshot } from '../types/portfolio';
 
 export type PortfolioDataSource = {
-  readonly getSnapshot: () => Promise<PortfolioSnapshot>;
+  readonly getSnapshot: (activePersonId?: string | null) => Promise<PortfolioSnapshot>;
 };
 
 export const readOnlyMockPortfolioDataSource: PortfolioDataSource = {
@@ -14,10 +14,20 @@ export const readOnlyMockPortfolioDataSource: PortfolioDataSource = {
 };
 
 export const configuredPortfolioDataSource: PortfolioDataSource = {
-  async getSnapshot() {
+  async getSnapshot(activePersonId) {
     const settings = await indexedDbPortfolioConfigRepository.loadSettings();
-    return settings === null || settings.holdings.length === 0
-      ? readOnlyMockPortfolioDataSource.getSnapshot()
-      : buildOnlinePortfolioSnapshot(settings);
+    if (settings === null || settings.people.length === 0) {
+      return readOnlyMockPortfolioDataSource.getSnapshot();
+    }
+
+    const person =
+      settings.people.find((candidate) => candidate.id === activePersonId) ?? settings.people[0];
+
+    /* istanbul ignore next -- settings.people.length === 0 already returned above */
+    if (person === undefined) {
+      return readOnlyMockPortfolioDataSource.getSnapshot();
+    }
+
+    return buildOnlinePortfolioSnapshot(person, settings.fiatCurrency);
   },
 };

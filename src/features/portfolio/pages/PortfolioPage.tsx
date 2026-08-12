@@ -4,6 +4,8 @@ import { Button } from '@/shared/components/Button/Button';
 import { usePortfolioController } from '../hooks/usePortfolioController';
 import { AssetList } from '../components/AssetList';
 import { PeriodTabs } from '../components/PeriodTabs';
+import { PersonDots } from '../components/PersonDots';
+import { PersonSwipeArea } from '../components/PersonSwipeArea';
 import { PortfolioAllTimeComparison } from '../components/PortfolioAllTimeComparison';
 import { type ChartPoint, PortfolioChart } from '../components/PortfolioChart';
 import { RewardsRow } from '../components/RewardsRow';
@@ -15,6 +17,12 @@ import type { PortfolioFiatCurrencyCode, PortfolioPeriod, PricePoint } from '../
 const SettingsPanel = lazy(async () => {
   const module = await import('../components/SettingsPanel');
   return { default: module.SettingsPanel };
+});
+
+// Same reasoning as SettingsPanel above — most sessions never manage accounts either.
+const AccountsPanel = lazy(async () => {
+  const module = await import('../components/AccountsPanel');
+  return { default: module.AccountsPanel };
 });
 
 const dayMs = 24 * 60 * 60 * 1_000;
@@ -122,8 +130,15 @@ export function PortfolioPage(): React.JSX.Element {
   return (
     <main className="h-[100svh] overflow-hidden bg-bg-primary px-[1.35rem] pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] text-fg-primary">
       <div className="mx-auto flex h-full w-full max-w-[25.2rem] flex-col">
-        <header className="grid grid-cols-[2.25rem_1fr_2.25rem] items-center pb-[1.35rem]">
-          <span aria-hidden="true" />
+        <header className="grid grid-cols-[2.25rem_1fr_2.25rem] items-center pb-2">
+          <Button
+            aria-label={t('aria.accounts')}
+            className="min-h-9 min-w-9 rounded-full p-0 text-[1.2rem] font-light leading-none"
+            onPress={controller.openAccounts}
+            variant="ghost"
+          >
+            {'👤'}
+          </Button>
           <h1 className="text-center text-[1.45rem] font-bold leading-tight tracking-normal">
             {controller.personName}
           </h1>
@@ -136,54 +151,71 @@ export function PortfolioPage(): React.JSX.Element {
             {'⚙︎'}
           </Button>
         </header>
+        <PersonDots
+          activeIndex={controller.activePersonIndex}
+          getDotLabel={(name) => t('aria.selectAccount', { name })}
+          onSelectIndex={controller.selectPersonByIndex}
+          people={controller.people}
+        />
         {controller.isOnlineError ? (
           <p className="pb-3 text-[0.78rem] text-loss" role="status">
             {t('status.onlineError')}
           </p>
         ) : null}
-        <PeriodTabs
-          ariaLabel={t('aria.periodNavigation')}
-          onSelectPeriod={controller.selectPeriodByKey}
-          periods={controller.periods}
-          selectedPeriod={controller.selectedPeriod}
-        />
-        <AssetList
-          changeDisplayMode={controller.changeDisplayMode}
-          formatAmount={formatAmount}
-          formatChange={(value) => formatChange(value, controller.fiatCurrency)}
-          formatCurrency={(value) => formatCurrency(value, controller.fiatCurrency)}
-          formatPercent={formatPercent}
-          getSelectAssetLabel={(asset) => t('aria.selectAsset', { asset })}
-          getToggleChangeLabel={(asset) => t('aria.toggleChange', { asset })}
-          onSelectAsset={controller.selectAsset}
-          onToggleChangeDisplayMode={controller.toggleChangeDisplayMode}
-          rows={controller.rows}
-        />
-        <div className="flex min-h-[3.1rem] flex-1" />
-        {controller.selectedPeriod === 'ALL' ? (
-          <PortfolioAllTimeComparison
-            ariaLabel={t('aria.chart', { asset: controller.selectedLabel })}
-            currentLabel={t('chart.currentValue')}
-            currentValue={controller.chartPoints.at(-1)?.value ?? 0}
-            formatValue={(value) => formatCurrency(value, controller.fiatCurrency)}
-            purchaseLabel={t('chart.purchaseValue')}
-            purchaseValue={controller.chartPoints[0]?.value ?? 0}
+        <PersonSwipeArea
+          activeIndex={controller.activePersonIndex}
+          onIndexChange={controller.selectPersonByIndex}
+          personCount={controller.people.length}
+        >
+          <PeriodTabs
+            ariaLabel={t('aria.periodNavigation')}
+            onSelectPeriod={controller.selectPeriodByKey}
+            periods={controller.periods}
+            selectedPeriod={controller.selectedPeriod}
           />
-        ) : (
-          <PortfolioChart
-            ariaLabel={t('aria.chart', { asset: controller.selectedLabel })}
-            currencyCode={controller.fiatCurrency}
-            points={chartPoints}
+          <AssetList
+            changeDisplayMode={controller.changeDisplayMode}
+            formatAmount={formatAmount}
+            formatChange={(value) => formatChange(value, controller.fiatCurrency)}
+            formatCurrency={(value) => formatCurrency(value, controller.fiatCurrency)}
+            formatPercent={formatPercent}
+            getSelectAssetLabel={(asset) => t('aria.selectAsset', { asset })}
+            getToggleChangeLabel={(asset) => t('aria.toggleChange', { asset })}
+            onSelectAsset={controller.selectAsset}
+            onToggleChangeDisplayMode={controller.toggleChangeDisplayMode}
+            rows={controller.rows}
           />
-        )}
-        <RewardsRow
-          label={t('rewards.ethStakingRewards')}
-          value={formatCurrency(controller.rewardValue, controller.fiatCurrency)}
-        />
+          <div className="flex min-h-[3.1rem] flex-1" />
+          {controller.selectedPeriod === 'ALL' ? (
+            <PortfolioAllTimeComparison
+              ariaLabel={t('aria.chart', { asset: controller.selectedLabel })}
+              currentLabel={t('chart.currentValue')}
+              currentValue={controller.chartPoints.at(-1)?.value ?? 0}
+              formatValue={(value) => formatCurrency(value, controller.fiatCurrency)}
+              purchaseLabel={t('chart.purchaseValue')}
+              purchaseValue={controller.chartPoints[0]?.value ?? 0}
+            />
+          ) : (
+            <PortfolioChart
+              ariaLabel={t('aria.chart', { asset: controller.selectedLabel })}
+              currencyCode={controller.fiatCurrency}
+              points={chartPoints}
+            />
+          )}
+          <RewardsRow
+            label={t('rewards.ethStakingRewards')}
+            value={formatCurrency(controller.rewardValue, controller.fiatCurrency)}
+          />
+        </PersonSwipeArea>
       </div>
       {controller.isSettingsOpen ? (
         <Suspense fallback={null}>
           <SettingsPanel onClose={controller.closeSettings} />
+        </Suspense>
+      ) : null}
+      {controller.isAccountsOpen ? (
+        <Suspense fallback={null}>
+          <AccountsPanel onClose={controller.closeAccounts} />
         </Suspense>
       ) : null}
     </main>

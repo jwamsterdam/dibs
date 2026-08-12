@@ -65,7 +65,6 @@ describe('SettingsPanel', () => {
             symbol: 'BTC',
           },
         ],
-        personName: 'JW',
       },
     };
   });

@@ -9,7 +9,7 @@ import type {
 import type {
   PortfolioFiatCurrency,
   PortfolioHoldingConfig,
-  PortfolioSettingsConfig,
+  PortfolioPersonConfig,
 } from '../types/settings';
 import { portfolioSnapshotSchema } from '../validation/portfolio.schema';
 import {
@@ -277,27 +277,27 @@ function buildHoldingSeries(
 }
 
 export async function buildOnlinePortfolioSnapshot(
-  settings: PortfolioSettingsConfig,
+  person: PortfolioPersonConfig,
+  fiatCurrency: PortfolioFiatCurrency,
   now = new Date(),
 ): Promise<PortfolioSnapshot> {
-  const uniqueCoinIds = [...new Set(settings.holdings.map((holding) => holding.coinGeckoId))];
+  const uniqueCoinIds = [...new Set(person.holdings.map((holding) => holding.coinGeckoId))];
   const chartsByCoin = new Map(
     await Promise.all(
       uniqueCoinIds.map(
-        async (coinId) =>
-          [coinId, await fetchCoinCharts(coinId, settings.fiatCurrency, now)] as const,
+        async (coinId) => [coinId, await fetchCoinCharts(coinId, fiatCurrency, now)] as const,
       ),
     ),
   );
 
-  const holdingSeries = settings.holdings.map((holding) =>
+  const holdingSeries = person.holdings.map((holding) =>
     buildHoldingSeries(holding, chartsByCoin, now),
   );
   const totalPrices = Object.fromEntries(
     PORTFOLIO_PERIODS.map((period) => [period, buildTotalPoints(holdingSeries, period)]),
   ) as AssetMarketSeries['prices'];
 
-  const assets: PortfolioAsset[] = settings.holdings.map((holding) => ({
+  const assets: PortfolioAsset[] = person.holdings.map((holding) => ({
     id: holding.id,
     label: holding.symbol,
     symbol: holding.symbol,
@@ -308,14 +308,14 @@ export async function buildOnlinePortfolioSnapshot(
   const snapshot = {
     people: [
       {
-        id: 'settings-person',
-        name: settings.personName,
+        id: person.id,
+        name: person.name,
         selectedAssetId: 'total',
         assets,
       },
     ],
     marketSeries: [{ assetId: 'total', prices: totalPrices }, ...holdingSeries],
-    fiatCurrency: getCurrencyCode(settings.fiatCurrency),
+    fiatCurrency: getCurrencyCode(fiatCurrency),
     futurePriceProvider: 'coingecko',
     futureStakingProvider: 'beacon-api',
     mode: 'online',

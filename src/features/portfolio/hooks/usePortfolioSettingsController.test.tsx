@@ -5,7 +5,7 @@ import { createTestQueryClient } from '@/shared/test/renderWithProviders';
 import { usePortfolioSettingsController } from './usePortfolioSettingsController';
 import { indexedDbPortfolioConfigRepository } from '../data/portfolioConfigRepository';
 import { getCoinGeckoHistoricalPrice, getCoinGeckoTopCoins } from '../data/coingeckoClient';
-import type { PortfolioSettingsConfig } from '../types/settings';
+import type { PortfolioPersonConfig, PortfolioSettingsConfig } from '../types/settings';
 
 jest.mock('../data/portfolioConfigRepository');
 jest.mock('../data/coingeckoClient', () => ({
@@ -14,11 +14,14 @@ jest.mock('../data/coingeckoClient', () => ({
   getCoinGeckoTopCoins: jest.fn(),
 }));
 
-const initialSettings: PortfolioSettingsConfig = {
-  personName: 'JW',
+const activePerson: PortfolioPersonConfig = { id: 'person-1', name: 'JW', holdings: [] };
+
+const initialConfig: PortfolioSettingsConfig = {
   fiatCurrency: 'eur',
-  holdings: [],
+  people: [activePerson],
 };
+
+const scopedInitialSettings = { fiatCurrency: 'eur' as const, holdings: [] };
 
 const bitcoinResult = {
   id: 'bitcoin',
@@ -36,7 +39,7 @@ function renderController() {
 
 describe('usePortfolioSettingsController', () => {
   beforeEach(() => {
-    jest.mocked(indexedDbPortfolioConfigRepository.loadSettings).mockResolvedValue(initialSettings);
+    jest.mocked(indexedDbPortfolioConfigRepository.loadSettings).mockResolvedValue(initialConfig);
     jest.mocked(indexedDbPortfolioConfigRepository.saveSettings).mockResolvedValue(undefined);
     jest.mocked(getCoinGeckoTopCoins).mockResolvedValue([bitcoinResult]);
     jest.mocked(getCoinGeckoHistoricalPrice).mockResolvedValue(50_000);
@@ -46,17 +49,17 @@ describe('usePortfolioSettingsController', () => {
     jest.resetAllMocks();
   });
 
-  it('loads persisted settings and starts with an invalid, empty holding form', async () => {
+  it('loads the active account holdings and starts with an invalid, empty holding form', async () => {
     const { result } = renderController();
 
-    await waitFor(() => expect(result.current.settings).toEqual(initialSettings));
+    await waitFor(() => expect(result.current.settings).toEqual(scopedInitialSettings));
     expect(result.current.canAddHolding).toBe(false);
     expect(result.current.selectedCoin).toBeNull();
   });
 
   it('filters the downloaded top-coins list locally once the query reaches two characters', async () => {
     const { result } = renderController();
-    await waitFor(() => expect(result.current.settings).toEqual(initialSettings));
+    await waitFor(() => expect(result.current.settings).toEqual(scopedInitialSettings));
 
     act(() => result.current.setQuery('bi'));
 
@@ -66,7 +69,7 @@ describe('usePortfolioSettingsController', () => {
 
   it('does nothing when selecting a key that is not among the search results', async () => {
     const { result } = renderController();
-    await waitFor(() => expect(result.current.settings).toEqual(initialSettings));
+    await waitFor(() => expect(result.current.settings).toEqual(scopedInitialSettings));
 
     act(() => result.current.selectCoinByKey('unknown-coin'));
 
@@ -75,7 +78,7 @@ describe('usePortfolioSettingsController', () => {
 
   it('marks the holding form valid once a coin and a positive amount are set', async () => {
     const { result } = renderController();
-    await waitFor(() => expect(result.current.settings).toEqual(initialSettings));
+    await waitFor(() => expect(result.current.settings).toEqual(scopedInitialSettings));
 
     act(() => result.current.setQuery('bi'));
     await waitFor(() => expect(result.current.searchResults).toEqual([bitcoinResult]));
@@ -90,7 +93,7 @@ describe('usePortfolioSettingsController', () => {
 
   it('previews the purchase value once a coin, date, and amount are set', async () => {
     const { result } = renderController();
-    await waitFor(() => expect(result.current.settings).toEqual(initialSettings));
+    await waitFor(() => expect(result.current.settings).toEqual(scopedInitialSettings));
 
     act(() => result.current.setQuery('bi'));
     await waitFor(() => expect(result.current.searchResults).toEqual([bitcoinResult]));
@@ -107,7 +110,7 @@ describe('usePortfolioSettingsController', () => {
 
   it('persists the fetched purchase price with the new holding', async () => {
     const { result } = renderController();
-    await waitFor(() => expect(result.current.settings).toEqual(initialSettings));
+    await waitFor(() => expect(result.current.settings).toEqual(scopedInitialSettings));
 
     act(() => result.current.setQuery('bi'));
     await waitFor(() => expect(result.current.searchResults).toEqual([bitcoinResult]));
@@ -119,14 +122,18 @@ describe('usePortfolioSettingsController', () => {
 
     expect(indexedDbPortfolioConfigRepository.saveSettings).toHaveBeenCalledWith(
       expect.objectContaining({
-        holdings: [expect.objectContaining({ purchasePrice: 50_000 })],
+        people: [
+          expect.objectContaining({
+            holdings: [expect.objectContaining({ purchasePrice: 50_000 })],
+          }),
+        ],
       }),
     );
   });
 
   it('flags a purchase date older than CoinGecko can price and skips the auto-fetch', async () => {
     const { result } = renderController();
-    await waitFor(() => expect(result.current.settings).toEqual(initialSettings));
+    await waitFor(() => expect(result.current.settings).toEqual(scopedInitialSettings));
 
     act(() => result.current.setQuery('bi'));
     await waitFor(() => expect(result.current.searchResults).toEqual([bitcoinResult]));
@@ -141,7 +148,7 @@ describe('usePortfolioSettingsController', () => {
 
   it('computes the purchase value from a manually entered price when out of range', async () => {
     const { result } = renderController();
-    await waitFor(() => expect(result.current.settings).toEqual(initialSettings));
+    await waitFor(() => expect(result.current.settings).toEqual(scopedInitialSettings));
 
     act(() => result.current.setQuery('bi'));
     await waitFor(() => expect(result.current.searchResults).toEqual([bitcoinResult]));
@@ -156,7 +163,7 @@ describe('usePortfolioSettingsController', () => {
 
   it('persists the manually entered price, not an auto-fetched one, for an out-of-range date', async () => {
     const { result } = renderController();
-    await waitFor(() => expect(result.current.settings).toEqual(initialSettings));
+    await waitFor(() => expect(result.current.settings).toEqual(scopedInitialSettings));
 
     act(() => result.current.setQuery('bi'));
     await waitFor(() => expect(result.current.searchResults).toEqual([bitcoinResult]));
@@ -170,14 +177,20 @@ describe('usePortfolioSettingsController', () => {
 
     expect(indexedDbPortfolioConfigRepository.saveSettings).toHaveBeenCalledWith(
       expect.objectContaining({
-        holdings: [expect.objectContaining({ purchasePrice: 9_000, purchasedAt: '2020-08-09' })],
+        people: [
+          expect.objectContaining({
+            holdings: [
+              expect.objectContaining({ purchasePrice: 9_000, purchasedAt: '2020-08-09' }),
+            ],
+          }),
+        ],
       }),
     );
   });
 
   it('rejects a zero or non-numeric amount', async () => {
     const { result } = renderController();
-    await waitFor(() => expect(result.current.settings).toEqual(initialSettings));
+    await waitFor(() => expect(result.current.settings).toEqual(scopedInitialSettings));
 
     act(() => result.current.setQuery('bi'));
     await waitFor(() => expect(result.current.searchResults).toEqual([bitcoinResult]));
@@ -192,7 +205,7 @@ describe('usePortfolioSettingsController', () => {
 
   it('persists a new holding and resets the form on submit', async () => {
     const { result } = renderController();
-    await waitFor(() => expect(result.current.settings).toEqual(initialSettings));
+    await waitFor(() => expect(result.current.settings).toEqual(scopedInitialSettings));
 
     act(() => result.current.setQuery('bi'));
     await waitFor(() => expect(result.current.searchResults).toEqual([bitcoinResult]));
@@ -204,24 +217,62 @@ describe('usePortfolioSettingsController', () => {
 
     expect(indexedDbPortfolioConfigRepository.saveSettings).toHaveBeenCalledWith(
       expect.objectContaining({
-        holdings: [expect.objectContaining({ amount: 0.5, coinGeckoId: 'bitcoin', symbol: 'BTC' })],
+        people: [
+          expect.objectContaining({
+            holdings: [
+              expect.objectContaining({ amount: 0.5, coinGeckoId: 'bitcoin', symbol: 'BTC' }),
+            ],
+          }),
+        ],
       }),
     );
     await waitFor(() => expect(result.current.query).toBe(''));
     expect(result.current.selectedCoin).toBeNull();
   });
 
+  it('auto-creates an account the first time a coin is added with no accounts yet', async () => {
+    jest
+      .mocked(indexedDbPortfolioConfigRepository.loadSettings)
+      .mockResolvedValue({ fiatCurrency: 'eur', people: [] });
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.settings.holdings).toEqual([]));
+
+    act(() => result.current.setQuery('bi'));
+    await waitFor(() => expect(result.current.searchResults).toEqual([bitcoinResult]));
+    act(() => result.current.selectCoinByKey('bitcoin'));
+    act(() => result.current.setAmount('0.5'));
+    await waitFor(() => expect(result.current.canAddHolding).toBe(true));
+
+    await act(() => result.current.addHolding());
+
+    expect(indexedDbPortfolioConfigRepository.saveSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        people: [
+          expect.objectContaining({
+            name: 'JW',
+            holdings: [expect.objectContaining({ coinGeckoId: 'bitcoin' })],
+          }),
+        ],
+      }),
+    );
+  });
+
   it('removes a holding by id', async () => {
     jest.mocked(indexedDbPortfolioConfigRepository.loadSettings).mockResolvedValue({
-      ...initialSettings,
-      holdings: [
+      ...initialConfig,
+      people: [
         {
-          amount: 1,
-          coinGeckoId: 'bitcoin',
-          id: 'holding-1',
-          name: 'Bitcoin',
-          purchasedAt: '2026-01-01',
-          symbol: 'BTC',
+          ...activePerson,
+          holdings: [
+            {
+              amount: 1,
+              coinGeckoId: 'bitcoin',
+              id: 'holding-1',
+              name: 'Bitcoin',
+              purchasedAt: '2026-01-01',
+              symbol: 'BTC',
+            },
+          ],
         },
       ],
     });
@@ -232,22 +283,29 @@ describe('usePortfolioSettingsController', () => {
 
     await waitFor(() =>
       expect(indexedDbPortfolioConfigRepository.saveSettings).toHaveBeenCalledWith(
-        expect.objectContaining({ holdings: [] }),
+        expect.objectContaining({
+          people: [expect.objectContaining({ holdings: [] })],
+        }),
       ),
     );
   });
 
   it('prefills the form for an existing holding and updates it in place on submit', async () => {
     jest.mocked(indexedDbPortfolioConfigRepository.loadSettings).mockResolvedValue({
-      ...initialSettings,
-      holdings: [
+      ...initialConfig,
+      people: [
         {
-          amount: 1,
-          coinGeckoId: 'bitcoin',
-          id: 'holding-1',
-          name: 'Bitcoin',
-          purchasedAt: '2026-01-01',
-          symbol: 'BTC',
+          ...activePerson,
+          holdings: [
+            {
+              amount: 1,
+              coinGeckoId: 'bitcoin',
+              id: 'holding-1',
+              name: 'Bitcoin',
+              purchasedAt: '2026-01-01',
+              symbol: 'BTC',
+            },
+          ],
         },
       ],
     });
@@ -269,7 +327,11 @@ describe('usePortfolioSettingsController', () => {
 
     expect(indexedDbPortfolioConfigRepository.saveSettings).toHaveBeenCalledWith(
       expect.objectContaining({
-        holdings: [expect.objectContaining({ id: 'holding-1', amount: 2.5 })],
+        people: [
+          expect.objectContaining({
+            holdings: [expect.objectContaining({ id: 'holding-1', amount: 2.5 })],
+          }),
+        ],
       }),
     );
     expect(result.current.editingHoldingId).toBeNull();
@@ -277,15 +339,20 @@ describe('usePortfolioSettingsController', () => {
 
   it('clears an in-progress edit when cancelled', async () => {
     jest.mocked(indexedDbPortfolioConfigRepository.loadSettings).mockResolvedValue({
-      ...initialSettings,
-      holdings: [
+      ...initialConfig,
+      people: [
         {
-          amount: 1,
-          coinGeckoId: 'bitcoin',
-          id: 'holding-1',
-          name: 'Bitcoin',
-          purchasedAt: '2026-01-01',
-          symbol: 'BTC',
+          ...activePerson,
+          holdings: [
+            {
+              amount: 1,
+              coinGeckoId: 'bitcoin',
+              id: 'holding-1',
+              name: 'Bitcoin',
+              purchasedAt: '2026-01-01',
+              symbol: 'BTC',
+            },
+          ],
         },
       ],
     });
@@ -302,15 +369,22 @@ describe('usePortfolioSettingsController', () => {
     expect(result.current.query).toBe('');
   });
 
-  it('persists the selected fiat currency', async () => {
+  it('persists the selected fiat currency at the top level, not per account', async () => {
     const { result } = renderController();
-    await waitFor(() => expect(result.current.settings).toEqual(initialSettings));
+    await waitFor(() => expect(result.current.settings).toEqual(scopedInitialSettings));
+    // `settings` alone can't distinguish "still the pre-load default" from "loaded, active
+    // person just happens to have no holdings either" — wait for the query to actually
+    // resolve before acting, so `config.people` reflects the fixture, not the default.
+    await waitFor(() => expect(indexedDbPortfolioConfigRepository.loadSettings).toHaveBeenCalled());
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     act(() => result.current.selectCurrencyByKey('usd'));
 
     await waitFor(() =>
       expect(indexedDbPortfolioConfigRepository.saveSettings).toHaveBeenCalledWith(
-        expect.objectContaining({ fiatCurrency: 'usd' }),
+        expect.objectContaining({ fiatCurrency: 'usd', people: initialConfig.people }),
       ),
     );
   });
@@ -320,7 +394,7 @@ describe('usePortfolioSettingsController', () => {
       .mocked(indexedDbPortfolioConfigRepository.saveSettings)
       .mockRejectedValue(new Error('offline'));
     const { result } = renderController();
-    await waitFor(() => expect(result.current.settings).toEqual(initialSettings));
+    await waitFor(() => expect(result.current.settings).toEqual(scopedInitialSettings));
 
     act(() => result.current.selectCurrencyByKey('usd'));
 

@@ -3,6 +3,8 @@
     "periodNavigation": "Periode",
     "selectAsset": "Selecteer {{asset}}",
     "settings": "Instellingen",
+    "accounts": "Accounts",
+    "selectAccount": "Ga naar {{name}}",
     "toggleChange": "Wissel verandering voor {{asset}}",
     "chart": "{{asset}} grafiek"
   },
@@ -38,5 +40,20 @@
     "cancelEdit": "Annuleren",
     "editHolding": "Wijzig {{symbol}}",
     "removeHolding": "Verwijder {{symbol}}"
+  },
+  "accounts": {
+    "title": "Accounts",
+    "close": "Sluit accounts",
+    "saving": "Opslaan",
+    "saveError": "Opslaan mislukt",
+    "addSectionTitle": "Voeg een account toe",
+    "nameLabel": "Naam",
+    "namePlaceholder": "Naam",
+    "addPerson": "Voeg account toe",
+    "updatePerson": "Wijzig account",
+    "cancelEdit": "Annuleren",
+    "editPerson": "Wijzig {{name}}",
+    "removePerson": "Verwijder {{name}}",
+    "selectPerson": "Wissel naar {{name}}"
   }
 }

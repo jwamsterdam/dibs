@@ -16,10 +16,17 @@ export const portfolioHoldingConfigSchema = z.object({
   purchasePrice: z.number().positive().optional(),
 });
 
-export const portfolioSettingsConfigSchema = z.object({
-  personName: z.string().min(1),
-  fiatCurrency: portfolioFiatCurrencySchema,
+export const portfolioPersonConfigSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
   holdings: z.array(portfolioHoldingConfigSchema),
+});
+
+export const portfolioSettingsConfigSchema = z.object({
+  fiatCurrency: portfolioFiatCurrencySchema,
+  // No .min(1): "currency set, zero accounts created yet" is a legitimate saved state —
+  // see migratePortfolioConfig.ts for how a pre-multi-account config upgrades into this shape.
+  people: z.array(portfolioPersonConfigSchema),
 });
 
 export const coinSearchResultSchema = z.object({

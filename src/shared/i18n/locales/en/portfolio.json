@@ -3,6 +3,8 @@
     "periodNavigation": "Period",
     "selectAsset": "Select {{asset}}",
     "settings": "Settings",
+    "accounts": "Accounts",
+    "selectAccount": "Go to {{name}}",
     "toggleChange": "Toggle change for {{asset}}",
     "chart": "{{asset}} chart"
   },
@@ -38,5 +40,20 @@
     "cancelEdit": "Cancel",
     "editHolding": "Edit {{symbol}}",
     "removeHolding": "Remove {{symbol}}"
+  },
+  "accounts": {
+    "title": "Accounts",
+    "close": "Close accounts",
+    "saving": "Saving",
+    "saveError": "Failed to save",
+    "addSectionTitle": "Add an account",
+    "nameLabel": "Name",
+    "namePlaceholder": "Name",
+    "addPerson": "Add account",
+    "updatePerson": "Update account",
+    "cancelEdit": "Cancel",
+    "editPerson": "Edit {{name}}",
+    "removePerson": "Remove {{name}}",
+    "selectPerson": "Switch to {{name}}"
   }
 }
