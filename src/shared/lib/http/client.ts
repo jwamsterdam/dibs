@@ -27,19 +27,3 @@ export async function apiGet<T>(path: string, schema: ZodType<T, ZodTypeDef, unk
   }
   return schema.parse(await res.json());
 }
-
-export async function apiPost<TBody, TResult>(
-  path: string,
-  body: TBody,
-  schema: ZodType<TResult, ZodTypeDef, unknown>,
-): Promise<TResult> {
-  const res = await fetch(toUrl(path), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    throw new ApiError(res.status, `POST ${path} failed (${res.status})`);
-  }
-  return schema.parse(await res.json());
-}

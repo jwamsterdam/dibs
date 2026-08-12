@@ -26,11 +26,10 @@ module.exports = {
     '/node_modules/(?!(msw|@mswjs|@bundled-es-modules|rettime|until-async|strict-event-emitter|headers-polyfill|outvariant|is-node-process|@open-draft|graphql|tough-cookie|set-cookie-parser)/)',
   ],
   // Coverage covers shared/ + feature slices. Bootstrap, generated, i18n config,
-  // stories, and dev/test infra are excluded (exercised via integration, not unit).
+  // and dev/test infra are excluded (exercised via integration, not unit).
   collectCoverageFrom: [
     'src/shared/**/*.{ts,tsx}',
     'src/features/**/*.{ts,tsx}',
-    '!src/**/*.stories.tsx',
     '!src/**/*.d.ts',
     '!src/shared/i18n/**',
     '!src/shared/lib/msw/**',

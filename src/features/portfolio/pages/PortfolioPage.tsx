@@ -1,13 +1,20 @@
-import { useMemo } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/shared/components/Button/Button';
 import { usePortfolioController } from '../hooks/usePortfolioController';
 import { AssetList } from '../components/AssetList';
 import { PeriodTabs } from '../components/PeriodTabs';
-import { SettingsPanel } from '../components/SettingsPanel';
 import { type ChartPoint, PortfolioChart } from '../components/PortfolioChart';
 import { RewardsRow } from '../components/RewardsRow';
 import type { PortfolioFiatCurrencyCode, PortfolioPeriod, PricePoint } from '../types/portfolio';
+
+// The settings form pulls in react-hook-form, react-aria-components' Calendar/DatePicker, and
+// @internationalized/date — most sessions never open it, so it's split into its own chunk
+// instead of shipping that weight in the initial bundle.
+const SettingsPanel = lazy(async () => {
+  const module = await import('../components/SettingsPanel');
+  return { default: module.SettingsPanel };
+});
 
 const dayMs = 24 * 60 * 60 * 1_000;
 
@@ -162,7 +169,11 @@ export function PortfolioPage(): React.JSX.Element {
           value={formatCurrency(controller.rewardValue, controller.fiatCurrency)}
         />
       </div>
-      {controller.isSettingsOpen ? <SettingsPanel onClose={controller.closeSettings} /> : null}
+      {controller.isSettingsOpen ? (
+        <Suspense fallback={null}>
+          <SettingsPanel onClose={controller.closeSettings} />
+        </Suspense>
+      ) : null}
     </main>
   );
 }

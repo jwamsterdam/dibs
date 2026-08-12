@@ -1,7 +1,7 @@
 /* istanbul ignore file -- jsdom has no IndexedDB implementation; exercised by real browsers only. */
 
 import type { ZodType } from 'zod';
-import { CACHE_STORE, openPortfolioDatabase, readStoreEntry, writeStoreEntry } from './indexedDb';
+import { CACHE_STORE, readStoreEntry, withPortfolioDatabase, writeStoreEntry } from './indexedDb';
 
 type CacheEntry = {
   readonly createdAt: number;
@@ -15,33 +15,29 @@ export async function getCachedOrFetch<T>(
   schema: ZodType<T>,
   fetcher: () => Promise<T>,
 ): Promise<T> {
-  const database = await openPortfolioDatabase();
   const now = Date.now();
 
-  try {
-    if (database !== null) {
-      try {
-        const entry = await readStoreEntry<CacheEntry>(database, CACHE_STORE, key);
-        if (entry !== undefined && now - entry.createdAt < entry.ttlMs) {
-          return schema.parse(entry.value);
-        }
-      } catch {
-        // A cache miss is safer than surfacing stale IndexedDB implementation errors.
+  const cached = await withPortfolioDatabase(async (database) => {
+    try {
+      const entry = await readStoreEntry<CacheEntry>(database, CACHE_STORE, key);
+      if (entry !== undefined && now - entry.createdAt < entry.ttlMs) {
+        return schema.parse(entry.value);
       }
+    } catch {
+      // A cache miss is safer than surfacing stale IndexedDB implementation errors.
     }
+    return undefined;
+  }, undefined);
 
-    const value = await fetcher();
-
-    if (database !== null) {
-      await writeStoreEntry<CacheEntry>(database, CACHE_STORE, key, {
-        createdAt: now,
-        ttlMs,
-        value,
-      });
-    }
-
-    return value;
-  } finally {
-    database?.close();
+  if (cached !== undefined) {
+    return cached;
   }
+
+  const value = await fetcher();
+
+  await withPortfolioDatabase(async (database) => {
+    await writeStoreEntry<CacheEntry>(database, CACHE_STORE, key, { createdAt: now, ttlMs, value });
+  }, undefined);
+
+  return value;
 }
