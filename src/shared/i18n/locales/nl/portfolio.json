@@ -9,6 +9,10 @@
   "rewards": {
     "ethStakingRewards": "ETH staking rewards"
   },
+  "chart": {
+    "purchaseValue": "Aankoop",
+    "currentValue": "Huidig"
+  },
   "status": {
     "onlineError": "Live portefeuille kon niet worden geladen — voorbeelddata getoond"
   },

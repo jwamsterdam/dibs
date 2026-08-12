@@ -57,6 +57,21 @@ describe('PortfolioPage', () => {
 
     expect(totalChange).toHaveTextContent(/\+€\s?11\.746/);
   });
+  it('swaps the line chart for the purchase-vs-current bars on the ALL tab', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<PortfolioPage />);
+
+    await user.click(screen.getByRole('tab', { name: 'ALL' }));
+
+    expect(screen.getByRole('region', { name: 'Totaal chart' })).toBeInTheDocument();
+    expect(screen.getByText('Purchase')).toBeInTheDocument();
+    expect(screen.getByText('Current')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: '1D' }));
+
+    expect(screen.queryByText('Purchase')).not.toBeInTheDocument();
+  });
+
   it('formats each chart point label from its real timestamp, at the active period granularity', () => {
     expect(
       toChartPoints(

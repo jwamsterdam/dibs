@@ -4,6 +4,7 @@ import { Button } from '@/shared/components/Button/Button';
 import { usePortfolioController } from '../hooks/usePortfolioController';
 import { AssetList } from '../components/AssetList';
 import { PeriodTabs } from '../components/PeriodTabs';
+import { PortfolioAllTimeComparison } from '../components/PortfolioAllTimeComparison';
 import { type ChartPoint, PortfolioChart } from '../components/PortfolioChart';
 import { RewardsRow } from '../components/RewardsRow';
 import type { PortfolioFiatCurrencyCode, PortfolioPeriod, PricePoint } from '../types/portfolio';
@@ -159,11 +160,22 @@ export function PortfolioPage(): React.JSX.Element {
           rows={controller.rows}
         />
         <div className="flex min-h-[3.1rem] flex-1" />
-        <PortfolioChart
-          ariaLabel={t('aria.chart', { asset: controller.selectedLabel })}
-          currencyCode={controller.fiatCurrency}
-          points={chartPoints}
-        />
+        {controller.selectedPeriod === 'ALL' ? (
+          <PortfolioAllTimeComparison
+            ariaLabel={t('aria.chart', { asset: controller.selectedLabel })}
+            currentLabel={t('chart.currentValue')}
+            currentValue={controller.chartPoints.at(-1)?.value ?? 0}
+            formatValue={(value) => formatCurrency(value, controller.fiatCurrency)}
+            purchaseLabel={t('chart.purchaseValue')}
+            purchaseValue={controller.chartPoints[0]?.value ?? 0}
+          />
+        ) : (
+          <PortfolioChart
+            ariaLabel={t('aria.chart', { asset: controller.selectedLabel })}
+            currencyCode={controller.fiatCurrency}
+            points={chartPoints}
+          />
+        )}
         <RewardsRow
           label={t('rewards.ethStakingRewards')}
           value={formatCurrency(controller.rewardValue, controller.fiatCurrency)}
